@@ -41,6 +41,8 @@ int mb_motor_init_freq(int pwm_freq_hz){
     rc_gpio_init (MOT_BRAKE_EN,GPIOHANDLE_REQUEST_OUTPUT);
     rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM1_PIN,0);
     rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM2_PIN,0);
+    // rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM1_PIN,0.5);
+    // rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM2_PIN,0.5);
     init_flag = 1;
 
     return 0;
@@ -112,6 +114,10 @@ int mb_motor_set(int motor, double duty){
         fprintf(stderr,"ERROR: trying to rc_set_motor_all before they have been initialized\n");
         return -1;
     }
+    // printf("Function Check!!!!!!\n");
+    // rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM1_PIN,0.5);
+    // rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM2_PIN,0.5);
+
     switch(motor)
     {
         case RIGHT_MOTOR:
@@ -121,12 +127,14 @@ int mb_motor_set(int motor, double duty){
             if(duty < 0) 
             {
                 rc_gpio_set_value(MDIR1_CHIP,MDIR1_PIN,0);
+                rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM1_PIN,-1*duty);
             }
             else
             {
                 rc_gpio_set_value(MDIR1_CHIP,MDIR1_PIN,1);
+                rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM1_PIN,duty);
             }
-            rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM1_PIN,abs(duty));
+            
             break;
         }
         case LEFT_MOTOR:
@@ -135,12 +143,14 @@ int mb_motor_set(int motor, double duty){
             if(duty < 0) 
             {
                 rc_gpio_set_value(MDIR2_CHIP,MDIR2_PIN,0);
+                rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM2_PIN,-1*duty);
             }
             else
             {
                 rc_gpio_set_value(MDIR2_CHIP,MDIR2_PIN,1);
+                rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM2_PIN,duty);
             }
-            rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM2_PIN,abs(duty));
+       
             break;
         }
         default:

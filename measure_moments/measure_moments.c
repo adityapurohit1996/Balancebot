@@ -7,6 +7,9 @@
 * TODO: capture the gyro data and timestamps to a file to determine the period.
 *
 *******************************************************************************/
+#define _STDC_FORMAT_MACROS
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -20,6 +23,9 @@
 #include <rc/adc.h>
 #include <rc/time.h>
 #include <rc/mpu.h>
+#include <inttypes.h>
+
+
 
 FILE* f1;
 
@@ -28,7 +34,8 @@ FILE* f1;
 *
 *******************************************************************************/
 int main(){
-	
+
+	f1 = fopen("/home/debian/gyro_data.txt", "w");
 	// make sure another instance isn't running
     // if return value is -3 then a background process is running with
     // higher privaledges and we couldn't kill it, in which case we should
@@ -59,6 +66,31 @@ int main(){
         return -1;
     }
 
+    rc_mpu_config_t mpu_config = rc_mpu_default_config();
+    rc_mpu_data_t mpu_data;
+	// mpu_config.dmp_sample_rate = 100;
+	// mpu_config.orient = ORIENTATION_Z_UP;
+
+	// now set up the imu for dmp interrupt operation
+	if(rc_mpu_initialize_dmp(&mpu_data, mpu_config)){
+		printf("rc_mpu_initialize_failed\n");
+		return -1;
+	}
+
+
+        
+    // uint64_t t_pre, t_cur;
+    // t_pre = rc_nanos_since_epoch();
+    // //call back function
+    // void imu_data(fstream& f1){
+    // t_cur = rc_nanos_since_epoch();
+    // int t_diff = (int)(t_cur-t_pre);   
+    // t_pre = t_cur; 
+    // fprintf(f1, "%d %f %f %f \n", t_diff, mpu_data.gyro[0], mpu_data.gyro[1], mpu_data.gyro[2], mpu_data.accel[0], mpu_data.accel[1], mpu_data.accel[2],mpu_data.dmp_TaitBryan[0], mpu_data.dmp_TaitBryan[1],mpu_data.dmp_TaitBryan[2] );
+
+
+    // }
+
     // make PID file to indicate your project is running
 	// due to the check made on the call to rc_kill_existing_process() above
 	// we can be fairly confident there is no PID file already and we can
@@ -67,12 +99,29 @@ int main(){
 
 
     rc_set_state(RUNNING);
+    
+    uint64_t t_pre, t_cur;
+    t_pre = rc_nanos_since_epoch();
     while(rc_get_state()!=EXITING){
-    	rc_nanosleep(1E9);
+        rc_mpu_read_gyro(&mpu_data);
+        rc_mpu_read_accel(&mpu_data);
+
+        t_cur = rc_nanos_since_epoch();
+        // uint64_t t_diff = t_cur-t_pre;
+        // printf("%"PRIu64"\n", t_diff);
+        // time in milliseconds
+        int t_diff = (int)(t_cur-t_pre);   
+        t_pre = t_cur;
+        printf("gyro data:%f %f %f \n", mpu_data.gyro[0], mpu_data.gyro[1], mpu_data.gyro[2]);
+        printf("t_diff:%d\n", t_diff);
+        fprintf(f1, "%d %f %f %f %f %f %f \n", t_diff, mpu_data.gyro[0], mpu_data.gyro[1], mpu_data.gyro[2], mpu_data.accel[0], mpu_data.accel[1], mpu_data.accel[2]) ;
+    	//rc_nanosleep(1E8);
     }
 
+    fclose(f1);
 	// exit cleanly
 	rc_encoder_eqep_cleanup();
+    rc_mpu_power_off();
 	rc_remove_pid_file();   // remove pid file LAST
 	return 0;
 }
