@@ -182,7 +182,7 @@ void balancebot_controller(){
     if(mb_setpoints.manual_ctl){
     	//send motor commands
    	}
-
+	/*
 	XBEE_getData();
 	double q_array[4] = {xbeeMsg.qw, xbeeMsg.qx, xbeeMsg.qy, xbeeMsg.qz};
 	double tb_array[3] = {0, 0, 0};
@@ -192,7 +192,7 @@ void balancebot_controller(){
 	mb_state.opti_roll = tb_array[0];
 	mb_state.opti_pitch = -tb_array[1]; //xBee quaternion is in Z-down, need Z-up
 	mb_state.opti_yaw = -tb_array[2];   //xBee quaternion is in Z-down, need Z-up
-	
+	*/
 	
    	//unlock state mutex
     pthread_mutex_unlock(&state_mutex);

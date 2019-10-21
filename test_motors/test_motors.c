@@ -56,24 +56,24 @@ int main(){
 		if(rc_get_state()==RUNNING){
 			mb_motor_brake(1);
 			//run right forward for 1s
-			mb_motor_set(RIGHT_MOTOR, 0.2);
-			mb_motor_set(LEFT_MOTOR, 0.2);
+			mb_motor_set(RIGHT_MOTOR, 0.8);
+			mb_motor_set(LEFT_MOTOR, 0);
 			rc_nanosleep(1E9);
 			//run left forward for 1s
-			//mb_motor_set(RIGHT_MOTOR, 0.0);
-			//mb_motor_set(LEFT_MOTOR, 0.2);
+			mb_motor_set(RIGHT_MOTOR, 0.0);
+			mb_motor_set(LEFT_MOTOR, 0.8);
 			rc_nanosleep(1E9);
 			//run left backwards for 1s
-			mb_motor_set(RIGHT_MOTOR, -0.2);
-			mb_motor_set(LEFT_MOTOR, -0.2);
+			mb_motor_set(RIGHT_MOTOR, -0.8);
+			mb_motor_set(LEFT_MOTOR, 0);
 			rc_nanosleep(1E9);
 			//run right backwards for 1s
-			//mb_motor_set(RIGHT_MOTOR, -0.2);
-			//mb_motor_set(LEFT_MOTOR, 0.0);
+			mb_motor_set(RIGHT_MOTOR, -0.8);
+			mb_motor_set(LEFT_MOTOR, 0.0);
 			rc_nanosleep(1E9);
 			//set both forwards for 1s
 			mb_motor_brake(0);
-			mb_motor_set_all(0.2);
+			mb_motor_set_all(0.8);
 			rc_nanosleep(1E9);
 			//stop motors for 1s
 			mb_motor_disable();
