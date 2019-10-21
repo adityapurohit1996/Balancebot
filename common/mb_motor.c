@@ -126,12 +126,12 @@ int mb_motor_set(int motor, double duty){
             //changing directions
             if(duty < 0) 
             {
-                rc_gpio_set_value(MDIR1_CHIP,MDIR1_PIN,0);
+                rc_gpio_set_value(MDIR1_CHIP,MDIR1_PIN,!(MOT_2_POL));
                 rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM1_PIN,-1*duty);
             }
             else
             {
-                rc_gpio_set_value(MDIR1_CHIP,MDIR1_PIN,1);
+                rc_gpio_set_value(MDIR1_CHIP,MDIR1_PIN,MOT_2_POL);
                 rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM1_PIN,duty);
             }
             
@@ -142,12 +142,12 @@ int mb_motor_set(int motor, double duty){
             printf("Left motor call!!!!!!\n");
             if(duty < 0) 
             {
-                rc_gpio_set_value(MDIR2_CHIP,MDIR2_PIN,0);
+                rc_gpio_set_value(MDIR2_CHIP,MDIR2_PIN,!(MOT_1_POL));
                 rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM2_PIN,-1*duty);
             }
             else
             {
-                rc_gpio_set_value(MDIR2_CHIP,MDIR2_PIN,1);
+                rc_gpio_set_value(MDIR2_CHIP,MDIR2_PIN,MOT_1_POL);
                 rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM2_PIN,duty);
             }
        
