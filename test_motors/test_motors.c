@@ -58,26 +58,26 @@ int main(){
 			//run right forward for 1s
 			mb_motor_set(RIGHT_MOTOR, 0.8);
 			mb_motor_set(LEFT_MOTOR, 0);
-			rc_nanosleep(1E9);
+			rc_nanosleep(3E9);
 			//run left forward for 1s
 			mb_motor_set(RIGHT_MOTOR, 0.0);
 			mb_motor_set(LEFT_MOTOR, 0.8);
-			rc_nanosleep(1E9);
-			//run left backwards for 1s
-			mb_motor_set(RIGHT_MOTOR, -0.8);
-			mb_motor_set(LEFT_MOTOR, 0);
-			rc_nanosleep(1E9);
+			rc_nanosleep(3E9);
 			//run right backwards for 1s
 			mb_motor_set(RIGHT_MOTOR, -0.8);
 			mb_motor_set(LEFT_MOTOR, 0.0);
-			rc_nanosleep(1E9);
-			//set both forwards for 1s
-			mb_motor_brake(0);
-			mb_motor_set_all(0.8);
-			rc_nanosleep(1E9);
+			rc_nanosleep(3E9);
+			//run left backwards for 1s
+			mb_motor_set(RIGHT_MOTOR, 0);
+			mb_motor_set(LEFT_MOTOR, -0.8);
+			rc_nanosleep(3E9);
+			// //set both forwards for 1s
+			// mb_motor_brake(0);
+			// mb_motor_set_all(0.8);
+			// rc_nanosleep(3E9);
 			//stop motors for 1s
 			mb_motor_disable();
-			rc_nanosleep(2E9);
+			rc_nanosleep(4E9);
 		}
 		rc_nanosleep(1E9);
 	}

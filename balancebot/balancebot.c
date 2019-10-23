@@ -168,7 +168,7 @@ void balancebot_controller(){
 	// Read IMU
 	mb_state.theta = mpu_data.dmp_TaitBryan[TB_PITCH_X];
 	// Read encoders
-	mb_state.left_encoder = rc_encoder_eqep_read(1);
+	mb_state.left_encoder = rc_encoder_eqep_read(1);//encoder 1 is reversed
 	mb_state.right_encoder = rc_encoder_eqep_read(2);
     // Update odometry 
  
