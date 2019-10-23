@@ -33,12 +33,14 @@ rc_mpu_data_t mpu_data;
 //call back function
 void imu_data() {
     t_cur = rc_nanos_since_epoch();
-    int t_diff = (int)(t_cur-t_pre);   
-    t_pre = t_cur; 
+    float t_diff = (float)((t_cur-t_pre)/1E9);   
     FILE* f1;
-    f1 = fopen("/home/debian/gyro_data.txt", "a");
-    fprintf(f1, "%d %f %f %f %f %f %f %f %f %f\n", t_diff, mpu_data.gyro[0], mpu_data.gyro[1], mpu_data.gyro[2], mpu_data.accel[0], mpu_data.accel[1], mpu_data.accel[2],mpu_data.dmp_TaitBryan[0], mpu_data.dmp_TaitBryan[1],mpu_data.dmp_TaitBryan[2] );
-    printf("%d %f %f %f %f %f %f %f %f %f\n", t_diff, mpu_data.gyro[0], mpu_data.gyro[1], mpu_data.gyro[2], mpu_data.accel[0], mpu_data.accel[1], mpu_data.accel[2],mpu_data.dmp_TaitBryan[0], mpu_data.dmp_TaitBryan[1],mpu_data.dmp_TaitBryan[2] );
+    f1 = fopen("/home/debian/gyro_data.csv", "a");
+    rc_mpu_read_gyro(&mpu_data);
+    // fprintf(f1, "%d %f %f %f %f %f %f %f %f %f\n", t_diff, mpu_data.gyro[0], mpu_data.gyro[1], mpu_data.gyro[2], mpu_data.accel[0], mpu_data.accel[1], mpu_data.accel[2],mpu_data.dmp_TaitBryan[0], mpu_data.dmp_TaitBryan[1],mpu_data.dmp_TaitBryan[2] );
+    // printf("%d %f %f %f %f %f %f %f %f %f\n", t_diff, mpu_data.gyror[0], mpu_data.gyro[1], mpu_data.gyro[2], mpu_data.accel[0], mpu_data.accel[1], mpu_data.accel[2],mpu_data.dmp_TaitBryan[0], mpu_data.dmp_TaitBryan[1],mpu_data.dmp_TaitBryan[2] );
+    fprintf(f1, "%f, %f, %f, %f, %f, %f, %f\n", t_diff, mpu_data.dmp_TaitBryan[0], mpu_data.dmp_TaitBryan[1], mpu_data.dmp_TaitBryan[2], mpu_data.gyro[0], mpu_data.gyro[1], mpu_data.gyro[2]);
+    printf("%f, %f, %f, %f, %f, %f, %f\n", t_diff, mpu_data.dmp_TaitBryan[0], mpu_data.dmp_TaitBryan[1], mpu_data.dmp_TaitBryan[2], mpu_data.gyro[0], mpu_data.gyro[1], mpu_data.gyro[2]);
     fclose(f1);
 }
 
