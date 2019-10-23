@@ -8,10 +8,10 @@ clear
 %% constants
 DT      = .01;          % 100hz controller loop
 m_w     = .094;          % mass of one wheel in Kg MEASURED
-m_b     = 1112.4;          % balancebot body mass without wheels (TO BE DETERMINED)%1282.4
+m_b     = 1.1124;          % balancebot body mass without wheels (TO BE DETERMINED)%1282.4
 R_w       = .042;          % radius of wheel in m MEASURED
 L       = .0844;         % center of wheel to Center of mass (TO BE DETERMINED)
-I_r     = 0.0043547;        % Inertia of body about center (not wheel axis) Kg*m^2 (TO BE DETERMINED)
+I_r     = 0.005869;        % Inertia of body about center (not wheel axis) Kg*m^2 (TO BE DETERMINED)
 g       = 9.81;         % gravity m/s^2
 R_gb    = 20.4;         % gearbox ratio
 tau_s   = 1.8462;         % Motor output stall Torque @ V_nominal (TO BE DETERMINED)
@@ -83,7 +83,7 @@ Q = [10 00 0 0
      0 0.01 0 0
      0 0 10 0
      0 0 0 0.08];
-R = 1.0;
+R = 10;
 K = lqr(A,B,Q,R)
 
 Ac = [(A-B*K)];
@@ -107,17 +107,21 @@ Nu = N(1+s);
 Nbar=Nu + K*Nx
 
 sys_cl = ss(Ac,Bc*Nbar,Cc,Dc,'statename',states,'inputname',inputs,'outputname',outputs)
+sys_u = ss(Ac,Bc*Nbar,K,Nbar);
 
 t = 0:0.01:4;
 dist = 0.1; % move balancebot 10cm
 angle = (dist/R_w)*ones(size(t));
 angle(1) = 0;
 [y,t,x]=lsim(sys_cl,angle,t); %lsim(sys_c1, angle, t, x0)   x0 = [0.1;0;0,0] statrts the sim from x0
+[u,t,x]=lsim(sys_u,angle,t);
 figure
 [AX,H1,H2] = plotyy(t,y(:,1),t,R_w*y(:,2),'plot');
 set(get(AX(1),'Ylabel'),'String','body angle (radians)')
 set(get(AX(2),'Ylabel'),'String','body position (meters)')
 title('Step Response with LQR Control and Precompensator')
+figure
+plot(t,u)
 
 %% find discrete time system
 %changing system to discrete
@@ -142,13 +146,18 @@ states = {'x' 'x_dot' 'phi' 'phi_dot'};
 inputs = {'phi'};
 outputs = {'x'; 'phi'};
 sys_dcl = ss(A_dc,B_dc*Nbar_d,C_dc,D_dc,DT,'statename',states,'inputname',inputs,'outputname',outputs);
+sys_du = ss(A_dc,B_dc*Nbar_d,K_d,Nbar_d)
+isstable(sys_dcl)
 
 t = 0:0.01:4;
 dist = 0.1; % move balancebot 10cm
 angle = (dist/R_w)*ones(size(t));
 [y,t,x]=lsim(sys_dcl,angle,t);
+[u,t,x]=lsim(sys_du,angle,t);
 figure
 [AX,H1,H2] = plotyy(t,y(:,1),t,R_w*y(:,2),'plot');
 set(get(AX(1),'Ylabel'),'String','body angle (radians)')
 set(get(AX(2),'Ylabel'),'String','body position (meters)')
 title('Discrete Step Response with LQR Control and Precompensator')
+figure
+plot(t,u)
