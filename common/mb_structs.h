@@ -38,4 +38,12 @@ struct mb_odometry{
     float psi;      //orientation from initialization in rad
 };
 
+typedef struct mb_gains mb_gains_t;
+struct mb_gains {
+    double K1;
+    double K2;
+    double K3;
+    double K4;
+}
+
 #endif
