@@ -96,7 +96,7 @@ int main(){
 	// set up mpu configuration
 	rc_mpu_config_t mpu_config = rc_mpu_default_config();
 	mpu_config.dmp_sample_rate = SAMPLE_RATE_HZ;
-	mpu_config.orient = ORIENTATION_Z_UP;
+	mpu_config.orient = ORIENTATION_Z_DOWN;
 
 	// now set up the imu for dmp interrupt operation
 	if(rc_mpu_initialize_dmp(&mpu_data, mpu_config)){
