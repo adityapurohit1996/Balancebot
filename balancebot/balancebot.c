@@ -23,6 +23,38 @@
 
 #include "balancebot.h"
 
+void getGains()
+{
+	FILE* fp;
+	double temp[4];
+	fp = fopen("gains.txt","r");
+	int i;
+	if (fp != NULL)
+	{ 
+		for (i=0;i<4;i++)
+		{
+			fscanf(fp,"%lf",temp[i]);	
+		}
+		mb_gains.K1 = temp[0];
+		mb_gains.K2 = temp[1];
+		mb_gains.K3 = temp[2];
+		mb_gains.K4 = temp[3];
+	}
+	fclose(fp);
+}
+static void balancebot_controller()
+{
+	// Get current values of the state
+
+
+	// Multiply by gains to calculate input
+
+
+	// Apply input to motors
+
+
+}
+
 /*******************************************************************************
 * int main() 
 *
@@ -33,6 +65,8 @@ int main(){
     // higher privaledges and we couldn't kill it, in which case we should
     // not continue or there may be hardware conflicts. If it returned -4
     // then there was an invalid argument that needs to be fixed.
+
+
     if(rc_kill_existing_process(2.0)<-2) return -1;
 
 	// start signal handler so we can exit cleanly
@@ -63,6 +97,8 @@ int main(){
 		return -1;
 	}
 
+	getGains();
+/*
 	printf("initializing xbee... \n");
 	//initalize XBee Radio
 	int baudrate = BAUDRATE;
@@ -70,7 +106,7 @@ int main(){
 		fprintf(stderr,"Error initializing XBee\n");
 		return -1;
 	};
-
+*/
     // make PID file to indicate your project is running
 	// due to the check made on the call to rc_kill_existing_process() above
 	// we can be fairly confident there is no PID file already and we can
@@ -109,6 +145,11 @@ int main(){
 	//initialize state mutex
     pthread_mutex_init(&state_mutex, NULL);
     pthread_mutex_init(&setpoint_mutex, NULL);
+
+	// Get gain values of controller from the file 
+	printf("Getting gain values for the controller");
+
+
 
 	//attach controller function to IMU interrupt
 	printf("initializing controller...\n");

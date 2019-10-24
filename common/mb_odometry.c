@@ -7,8 +7,12 @@
 
 #include "../balancebot/balancebot.h"
 
-void mb_odometry_init(mb_odometry_t* mb_odometry, float x, float y, float theta){
+void mb_odometry_init(mb_odometry_t* mb_odometry, float x, float y, float theta)
+{
+    rc_encoder_eqep_init();
+    
 /* TODO */
+
 
 }
 
