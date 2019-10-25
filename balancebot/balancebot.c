@@ -96,7 +96,7 @@ int main(){
 	// set up mpu configuration
 	rc_mpu_config_t mpu_config = rc_mpu_default_config();
 	mpu_config.dmp_sample_rate = SAMPLE_RATE_HZ;
-	mpu_config.orient = ORIENTATION_Z_UP;
+	mpu_config.orient = ORIENTATION_Z_DOWN;
 
 	// now set up the imu for dmp interrupt operation
 	if(rc_mpu_initialize_dmp(&mpu_data, mpu_config)){
@@ -163,13 +163,26 @@ int main(){
 *******************************************************************************/
 void balancebot_controller(){
 
+	
 	//lock state mutex
 	pthread_mutex_lock(&state_mutex);
 	// Read IMU
+	static float last_theta,last_phi;
 	mb_state.theta = mpu_data.dmp_TaitBryan[TB_PITCH_X];
 	// Read encoders
-	mb_state.left_encoder = rc_encoder_eqep_read(1);//encoder 1 is reversed
+	mb_state.left_encoder = -rc_encoder_eqep_read(1);//encoder 1 is reversed
 	mb_state.right_encoder = rc_encoder_eqep_read(2);
+	mb_state.phi = (float)(mb_state.right_encoder + mb_state.left_encoder)*3.14/ENCODER_RES;
+
+	mb_state.theta_dot = (mb_state.theta - last_theta) * SAMPLE_RATE_HZ;
+	mb_state.phi_dot = (mb_state.phi - last_phi) * SAMPLE_RATE_HZ;
+
+	last_theta = mb_state.theta;
+	last_phi = mb_state.phi;
+
+
+
+
     // Update odometry 
  
 
@@ -198,6 +211,9 @@ void balancebot_controller(){
     pthread_mutex_unlock(&state_mutex);
 
 }
+/*******************************************************************************
+* get_gains()
+* 
 
 
 /*******************************************************************************
@@ -243,6 +259,8 @@ void* printf_loop(void* ptr){
 			printf("\n");
 			printf("    θ    |");
 			printf("    φ    |");
+			printf("theta_dot |");
+			printf("phi_dot   |");
 			printf("  L Enc  |");
 			printf("  R Enc  |");
 			printf("    X    |");
@@ -262,6 +280,8 @@ void* printf_loop(void* ptr){
 			pthread_mutex_lock(&state_mutex);
 			printf("%7.3f  |", mb_state.theta);
 			printf("%7.3f  |", mb_state.phi);
+			printf("%7.3f  |", mb_state.theta_dot);
+			printf("%7.3f  |", mb_state.phi_dot);
 			printf("%7d  |", mb_state.left_encoder);
 			printf("%7d  |", mb_state.right_encoder);
 			printf("%7.3f  |", mb_state.opti_x);
