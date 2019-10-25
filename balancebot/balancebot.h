@@ -32,6 +32,7 @@ int XBEE_portID;
 
 // functions
 void balancebot_controller();
+void get_gains();
 
 //threads
 void* setpoint_control_loop(void* ptr);

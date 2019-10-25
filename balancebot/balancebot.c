@@ -114,7 +114,7 @@ int main(){
 	rc_make_pid_file();
 
 	// start printf_thread if running from a terminal
-	// if it was started as a background process then don't bother
+	// if it was started as a background process then don't botherrc_encoder_eqep_read(1
 	printf("starting print thread... \n");
 	pthread_t  printf_thread;
 	rc_pthread_create(&printf_thread, printf_loop, (void*) NULL, SCHED_OTHER, 0);
@@ -204,15 +204,27 @@ int main(){
 *******************************************************************************/
 void balancebot_controller(){
 
+	
 	//lock state mutex
 	pthread_mutex_lock(&state_mutex);
 	// Read IMU
+
+	// Update odometry 
+	mb_odometry_update(&mb_odometry, &mb_state);
+
+	static float last_theta,last_phi;
 	mb_state.theta = mpu_data.dmp_TaitBryan[TB_PITCH_X];
 	// Read encoders
-	mb_state.left_encoder = rc_encoder_eqep_read(1);//encoder 1 is reversed
-	mb_state.right_encoder = rc_encoder_eqep_read(2);
-    // Update odometry 
- 
+	// mb_state.left_encoder = -rc_encoder_eqep_read(1);//encoder 1 is reversed
+	// mb_state.right_encoder = rc_encoder_eqep_read(2);
+	mb_state.phi = (float)(mb_state.right_encoder + mb_state.left_encoder)*3.14/ENCODER_RES;
+
+	mb_state.theta_dot = (mb_state.theta - last_theta) * SAMPLE_RATE_HZ;
+	mb_state.phi_dot = (mb_state.phi - last_phi) * SAMPLE_RATE_HZ;
+
+	last_theta = mb_state.theta;
+	last_phi = mb_state.phi;
+
 
     // Calculate controller outputs
     
@@ -239,6 +251,9 @@ void balancebot_controller(){
     pthread_mutex_unlock(&state_mutex);
 
 }
+/*******************************************************************************
+* get_gains()
+*/
 
 
 /*******************************************************************************
@@ -284,6 +299,8 @@ void* printf_loop(void* ptr){
 			printf("\n");
 			printf("    θ    |");
 			printf("    φ    |");
+			printf("theta_dot |");
+			printf("phi_dot   |");
 			printf("  L Enc  |");
 			printf("  R Enc  |");
 			printf("    X    |");
@@ -303,11 +320,16 @@ void* printf_loop(void* ptr){
 			pthread_mutex_lock(&state_mutex);
 			printf("%7.3f  |", mb_state.theta);
 			printf("%7.3f  |", mb_state.phi);
+			printf("%7.3f  |", mb_state.theta_dot);
+			printf("%7.3f  |", mb_state.phi_dot);
 			printf("%7d  |", mb_state.left_encoder);
 			printf("%7d  |", mb_state.right_encoder);
 			printf("%7.3f  |", mb_state.opti_x);
 			printf("%7.3f  |", mb_state.opti_y);
 			printf("%7.3f  |", mb_state.opti_yaw);
+			// printf("%7.3f  |", mb_odometry.x);
+			// printf("%7.3f  |", mb_odometry.y);
+			// printf("%7.3f  |", mb_odometry.psi);
 			pthread_mutex_unlock(&state_mutex);
 			fflush(stdout);
 		}
