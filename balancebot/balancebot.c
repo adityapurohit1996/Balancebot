@@ -122,6 +122,7 @@ int main(){
 	rc_encoder_eqep_write(2, 0);
 
 	printf("initializing odometry...\n");
+	mb_odometry.gyro_yaw_last = mb_state.gyro_yaw;
 	mb_odometry_init(&mb_odometry, 0.0,0.0,0.0);
 
 	printf("attaching imu interupt...\n");
@@ -168,14 +169,12 @@ void balancebot_controller(){
 	pthread_mutex_lock(&state_mutex);
 	// Read IMU
 
-	// Update odometry 
-	mb_odometry_update(&mb_odometry, &mb_state);
-
 	static float last_theta,last_phi;
 	mb_state.theta = mpu_data.dmp_TaitBryan[TB_PITCH_X];
-	// Read encoders
-	// mb_state.left_encoder = -rc_encoder_eqep_read(1);//encoder 1 is reversed
-	// mb_state.right_encoder = rc_encoder_eqep_read(2);
+
+	// Read encoders and update odometry 
+	mb_odometry_update(&mb_odometry, &mb_state);
+
 	mb_state.phi = (float)(mb_state.right_encoder + mb_state.left_encoder)*3.14/ENCODER_RES;
 
 	mb_state.theta_dot = (mb_state.theta - last_theta) * SAMPLE_RATE_HZ;
@@ -256,10 +255,10 @@ void* printf_loop(void* ptr){
 			printf("\nRUNNING: Hold upright to balance.\n");
 			printf("                 SENSORS               |            MOCAP            |");
 			printf("\n");
-			printf("    θ    |");
-			printf("    φ    |");
-			printf("theta_dot |");
-			printf("phi_dot   |");
+			// printf("    θ    |");
+			// printf("    φ    |");
+			// printf("theta_dot |");
+			// printf("phi_dot   |");
 			printf("  L Enc  |");
 			printf("  R Enc  |");
 			printf("    X    |");
@@ -277,10 +276,10 @@ void* printf_loop(void* ptr){
 			printf("\r");
 			//Add Print stattements here, do not follow with /n
 			pthread_mutex_lock(&state_mutex);
-			printf("%7.3f  |", mb_state.theta);
-			printf("%7.3f  |", mb_state.phi);
-			printf("%7.3f  |", mb_state.theta_dot);
-			printf("%7.3f  |", mb_state.phi_dot);
+			// printf("%7.3f  |", mb_state.theta);
+			// printf("%7.3f  |", mb_state.phi);
+			// printf("%7.3f  |", mb_state.theta_dot);
+			// printf("%7.3f  |", mb_state.phi_dot);
 			printf("%7d  |", mb_state.left_encoder);
 			printf("%7d  |", mb_state.right_encoder);
 			// printf("%7.3f  |", mb_state.opti_x);

@@ -5,6 +5,7 @@ typedef struct mb_state mb_state_t;
 struct mb_state{
     // raw sensor inputs
     float   theta;             // body angle (rad)
+    float   gyro_yaw;
     float   phi;               // average wheel angle (rad)
     float theta_dot;
     float phi_dot;
@@ -38,6 +39,7 @@ struct mb_odometry{
     float x;        //x position from initialization in m
     float y;        //y position from initialization in m
     float psi;      //orientation from initialization in rad
+    float gyro_yaw_last;    //for gyrodometry 
 };
 
 #endif

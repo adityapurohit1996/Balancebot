@@ -13,7 +13,7 @@
 #define GEAR_RATIO                  20.4 // gear ratio of motor
 #define WHEEL_RADIUS                0.042      //radius of wheel in meters
 #define WHEEL_BASE                  0.208 // wheel separation distance in meters
-
+#define GYRODOM_THRESH              0.125*M_PI/180
 
 
 
@@ -52,8 +52,18 @@ float delta_y = delta_d*sin(mb_odometry->psi + delta_psi/2);
 
 mb_odometry->x += delta_s_w_left;
 mb_odometry->y += delta_y;
-mb_odometry->psi += delta_psi;
+
+//gyrodometry
+float cur_gyro_yaw = mpu_data.dmp_TaitBryan[TB_YAW_Z];
+float delta_gyro_yaw = cur_gyro_yaw - mb_odometry->gyro_yaw_last;
+float delta_G_O = delta_gyro_yaw - delta_psi;
+if (fabs(delta_G_O) > GYRODOM_THRESH)
+    mb_odometry->psi += delta_gyro_yaw;
+else
+    mb_odometry->psi += delta_psi;
 mb_odometry->psi = mb_clamp_radians(mb_odometry->psi);
+
+mb_odometry->gyro_yaw_last = cur_gyro_yaw;
 
 }
 
