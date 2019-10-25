@@ -2,9 +2,9 @@
 * mb_defs.h
 *
 *   defines for your bot
-*   You will need to fill this in based on the data sheets, schematics, etc. 
+*   You will need to fill this in based on the data sheets, schematics, etc.
 *      and your specific configuration...
-* 
+*
 *******************************************************************************/
 #ifndef MB_DEFS_H
 #define MB_DEFS_H
@@ -37,5 +37,22 @@
 #define MPWM2_PIN                  'B' //PWM pin for second motor
 #define PWM_SUBSYSTEM               1 // PWM subsystem
 
+//for controllers
+#define SOFT_START_SEC		0.7
+// inner loop controller 100hz
+#define D1_ORDER		3
+#define D1_NUM			{-1372}
+#define D1_DEN			{ 1.000, 112.8, -128, 4321}
+#define D1_NUM_LEN		1
+#define D1_DEN_LEN		4
+#define D1_SATURATION_TIMEOUT	0.4
+
+// outer loop controller 100hz
+#define	D2_ORDER		2
+#define D2_NUM			{-2.815, 0, 146.2}
+#define D2_DEN			{1.00000,  0, 0}
+#define D2_NUM_LEN		3
+#define D2_DEN_LEN		3
+#define THETA_REF_MAX		0.33
 
 #endif

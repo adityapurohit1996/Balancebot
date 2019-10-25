@@ -3,7 +3,7 @@
 *
 * Main template code for the BalanceBot Project
 * based on rc_balance
-* 
+*
 *******************************************************************************/
 
 #include <math.h>
@@ -24,7 +24,7 @@
 #include "balancebot.h"
 
 /*******************************************************************************
-* int main() 
+* int main()
 *
 *******************************************************************************/
 int main(){
@@ -46,7 +46,7 @@ int main(){
         return -1;
     }
 
-	// initialize enocders
+	// initialize enocdersint
     if(rc_encoder_eqep_init()==-1){
         fprintf(stderr,"ERROR: failed to initialize eqep encoders\n");
         return -1;
@@ -112,7 +112,7 @@ int main(){
 
 	//attach controller function to IMU interrupt
 	printf("initializing controller...\n");
-	mb_controller_init();
+	mb_controller_init(&mb_controls,&mb_setpoints);
 
 	printf("initializing motors...\n");
 	mb_motor_init();
@@ -130,7 +130,7 @@ int main(){
 
 	printf("we are running!!!...\n");
 	// done initializing so set state to RUNNING
-	rc_set_state(RUNNING); 
+	rc_set_state(RUNNING);
 
 	// Keep looping until state changes to EXITING
 	while(rc_get_state()!=EXITING){
@@ -141,13 +141,13 @@ int main(){
 		// always sleep at some point
 		rc_nanosleep(1E9);
 	}
-	
+
 	// exit cleanly
 	rc_mpu_power_off();
-	mb_motor_cleanup();
+	mb_motor_cleanup(&mb_controls);
 	rc_led_cleanup();
 	rc_encoder_eqep_cleanup();
-	rc_remove_pid_file(); // remove pid file LAST 
+	rc_remove_pid_file(); // remove pid file LAST
 	return 0;
 }
 
@@ -159,12 +159,12 @@ int main(){
 * Called at SAMPLE_RATE_HZ
 *
 * TODO: You must implement this function to keep the balancebot balanced
-* 
+*
 *
 *******************************************************************************/
 void balancebot_controller(){
 
-	
+
 	//lock state mutex
 	pthread_mutex_lock(&state_mutex);
 	// Read IMU
@@ -172,7 +172,7 @@ void balancebot_controller(){
 	static float last_theta,last_phi;
 	mb_state.theta = mpu_data.dmp_TaitBryan[TB_PITCH_X];
 
-	// Read encoders and update odometry 
+	// Read encoders and update odometry
 	mb_odometry_update(&mb_odometry, &mb_state);
 
 	mb_state.phi = (float)(mb_state.right_encoder + mb_state.left_encoder)*3.14/ENCODER_RES;
@@ -184,15 +184,16 @@ void balancebot_controller(){
 	last_phi = mb_state.phi;
 
 
-    // Calculate controller outputs
-    
-    if(!mb_setpoints.manual_ctl){
-    	//send motor commands
-   	}
+  // Calculate controller outputs
+	mb_controller_update(&mb_state,&mb_setpoints);
+  if(!mb_setpoints.manual_ctl){
+		mb_motor_set(RIGHT_MOTOR, mb_state.d1_u);
+		mb_motor_set(LEFT_MOTOR, mb_state.d1_u);
+  }
 
-    if(mb_setpoints.manual_ctl){
-    	//send motor commands
-   	}
+  if(mb_setpoints.manual_ctl){
+    //send motor commands
+  }
 	/*
 	XBEE_getData();
 	double q_array[4] = {xbeeMsg.qw, xbeeMsg.qx, xbeeMsg.qy, xbeeMsg.qz};
@@ -204,7 +205,7 @@ void balancebot_controller(){
 	mb_state.opti_pitch = -tb_array[1]; //xBee quaternion is in Z-down, need Z-up
 	mb_state.opti_yaw = -tb_array[2];   //xBee quaternion is in Z-down, need Z-up
 	*/
-	
+
    	//unlock state mutex
     pthread_mutex_unlock(&state_mutex);
 
@@ -239,7 +240,7 @@ void* setpoint_control_loop(void* ptr){
 
 
 /*******************************************************************************
-* printf_loop() 
+* printf_loop()
 *
 * prints diagnostics to console
 * this only gets started if executing from terminal
@@ -271,7 +272,7 @@ void* printf_loop(void* ptr){
 			printf("\nPAUSED\n");
 		}
 		last_state = new_state;
-		
+
 		if(new_state == RUNNING){
 			printf("\r");
 			//Add Print stattements here, do not follow with /n
@@ -294,4 +295,4 @@ void* printf_loop(void* ptr){
 		rc_nanosleep(1E9/PRINTF_HZ);
 	}
 	return NULL;
-} 
+}
