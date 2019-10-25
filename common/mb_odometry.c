@@ -26,7 +26,6 @@ mb_odometry->psi = psi;
 // mb_state.left_encoder = -rc_encoder_eqep_read(1);//encoder 1 is reversed
 // mb_state.right_encoder = rc_encoder_eqep_read(2);
 
-
 }
 
 void mb_odometry_update(mb_odometry_t* mb_odometry, mb_state_t* mb_state){

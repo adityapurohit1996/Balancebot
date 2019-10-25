@@ -135,7 +135,7 @@ D_d = sys_d.d;
 %% discrete time closed loop
 A_dc = [(A_d-B_d*K_d)];
 B_dc = [B_d];
-C_dc = eye(4,4);
+C_dc = [C_d];
 D_dc = [D_d];
 
 %pre-compenasator in discrete time
@@ -145,31 +145,19 @@ Nbar_d = -0.11 % adjust Nbar for steadystate performance
 states = {'x' 'x_dot' 'phi' 'phi_dot'};
 inputs = {'phi'};
 outputs = {'x'; 'phi'};
-
-sys_dcl = ss(A_dc,B_dc*Nbar_d,C_dc,0,DT);
-sys_du = ss(A_dc,B_dc*Nbar_d,-K_d,Nbar_d)
+sys_dcl = ss(A_dc,B_dc*Nbar_d,C_dc,D_dc,DT,'statename',states,'inputname',inputs,'outputname',outputs);
+sys_du = ss(A_dc,B_dc*Nbar_d,K_d,Nbar_d)
 isstable(sys_dcl)
 
 t = 0:0.01:4;
-dist = 0.01; % move balancebot 10cm
+dist = 0.1; % move balancebot 10cm
 angle = (dist/R_w)*ones(size(t));
 [y,t,x]=lsim(sys_dcl,angle,t);
-u = -K_d*y' + Nbar_d*angle;
-%[u,t,x]=lsim(sys_du,angle,t);
-
+[u,t,x]=lsim(sys_du,angle,t);
 figure
-plot(t,y(:,1))
-hold on
-plot(t,y(:,2))
-plot(t,y(:,3))
-plot(t,y(:,4))
-
-% figure
-% [AX,H1,H2] = plotyy(t,y(:,1),t,y(:,2),t,R_w*y(:,3),t,y(:,4),'plot');
-% set(get(AX(1),'Ylabel'),'String','body angle (radians)')
-% set(get(AX(2),'Ylabel'),'String','body ang vel (rad/s)')
-% set(get(AX(3),'Ylabel'),'String','body position (radians)')
-% set(get(AX(4),'Ylabel'),'String','body vel (rad/s)')
-% title('Discrete Step Response with LQR Control and Precompensator')
+[AX,H1,H2] = plotyy(t,y(:,1),t,R_w*y(:,2),'plot');
+set(get(AX(1),'Ylabel'),'String','body angle (radians)')
+set(get(AX(2),'Ylabel'),'String','body position (meters)')
+title('Discrete Step Response with LQR Control and Precompensator')
 figure
 plot(t,u)
