@@ -23,6 +23,8 @@
 
 #include "balancebot.h"
 
+#define CONTROLLER_SWITCH_ANGLE 15*3.14/180
+
 /*******************************************************************************
 * int main() 
 *
@@ -117,6 +119,10 @@ int main(){
 	printf("initializing motors...\n");
 	mb_motor_init();
 
+	printf("getting gains");
+	mb_get_gains(&mb_gains);
+	printf("%lf\t%lf\t%lf\t%lf\n",mb_gains.K1,mb_gains.K2,mb_gains.K3,mb_gains.K4);
+
 	printf("resetting encoders...\n");
 	rc_encoder_eqep_write(1, 0);
 	rc_encoder_eqep_write(2, 0);
@@ -162,6 +168,9 @@ int main(){
 * 
 *
 *******************************************************************************/
+
+
+
 void balancebot_controller(){
 
 	
@@ -169,22 +178,45 @@ void balancebot_controller(){
 	pthread_mutex_lock(&state_mutex);
 	// Read IMU
 
-	static float last_theta,last_phi;
+	static float last_theta,last_theta_2,last_theta_3,last_phi;
 	mb_state.theta = mpu_data.dmp_TaitBryan[TB_PITCH_X];
 
 	// Read encoders and update odometry 
 	mb_odometry_update(&mb_odometry, &mb_state);
 
-	mb_state.phi = (float)(mb_state.right_encoder + mb_state.left_encoder)*3.14/ENCODER_RES;
+	mb_state.phi = (float)(mb_state.right_encoder + mb_state.left_encoder)*3.14/(ENCODER_RES*GEAR_RATIO);
 
-	mb_state.theta_dot = (mb_state.theta - last_theta) * SAMPLE_RATE_HZ;
+	mb_state.theta_dot = (mb_state.theta - last_theta_3) * SAMPLE_RATE_HZ/3;
 	mb_state.phi_dot = (mb_state.phi - last_phi) * SAMPLE_RATE_HZ;
 
 	last_theta = mb_state.theta;
+	last_theta_2 = last_theta;
+	last_theta_3 = last_theta_2;
 	last_phi = mb_state.phi;
 
+	// Calculate controller outputs
+	if((mb_state.theta>-CONTROLLER_SWITCH_ANGLE) || (mb_state.theta<CONTROLLER_SWITCH_ANGLE))
+	{
+	mb_state.u = mb_gains.K1*mb_state.theta + mb_gains.K2*mb_state.theta_dot - mb_gains.K3*mb_state.phi - mb_gains.K4*mb_state.phi_dot + mb_gains.Nbar*0.001;
+	}
+	else
+	{
+	mb_state.u = mb_gains.K1*1.2*mb_state.theta + mb_gains.K2*mb_state.theta_dot - mb_gains.K3*mb_state.phi - mb_gains.K4*mb_state.phi_dot + mb_gains.Nbar*0.001;
 
-    // Calculate controller outputs
+	}
+
+	if(mb_state.u < -1)
+	{
+		mb_state.u = -0.999;
+	}
+	else if(mb_state.u > 1)
+	{
+		mb_state.u =0.999;
+	}
+
+
+    mb_motor_set(RIGHT_MOTOR,mb_state.u);
+	mb_motor_set(LEFT_MOTOR,mb_state.u);
     
     if(!mb_setpoints.manual_ctl){
     	//send motor commands
@@ -209,9 +241,7 @@ void balancebot_controller(){
     pthread_mutex_unlock(&state_mutex);
 
 }
-/*******************************************************************************
-* get_gains()
-*/
+
 
 
 /*******************************************************************************
@@ -255,10 +285,11 @@ void* printf_loop(void* ptr){
 			printf("\nRUNNING: Hold upright to balance.\n");
 			printf("                 SENSORS               |            MOCAP            |");
 			printf("\n");
-			// printf("    θ    |");
-			// printf("    φ    |");
-			// printf("theta_dot |");
-			// printf("phi_dot   |");
+			printf("    θ    |");
+			printf("    φ    |");
+			printf("theta_dot |");
+			printf("phi_dot   |");
+			printf("u         |");
 			printf("  L Enc  |");
 			printf("  R Enc  |");
 			printf("    X    |");
@@ -276,10 +307,11 @@ void* printf_loop(void* ptr){
 			printf("\r");
 			//Add Print stattements here, do not follow with /n
 			pthread_mutex_lock(&state_mutex);
-			// printf("%7.3f  |", mb_state.theta);
-			// printf("%7.3f  |", mb_state.phi);
-			// printf("%7.3f  |", mb_state.theta_dot);
-			// printf("%7.3f  |", mb_state.phi_dot);
+			printf("%7.3f  |", mb_state.theta);
+			printf("%7.3f  |", mb_state.phi);
+			printf("%7.3f  |", mb_state.theta_dot);
+			printf("%7.3f  |", mb_state.phi_dot);
+			printf("%7.3f  |", mb_state.u);
 			printf("%7d  |", mb_state.left_encoder);
 			printf("%7d  |", mb_state.right_encoder);
 			// printf("%7.3f  |", mb_state.opti_x);

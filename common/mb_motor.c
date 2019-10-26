@@ -122,7 +122,7 @@ int mb_motor_set(int motor, double duty){
     {
         case LEFT_MOTOR:
         {
-            printf("geft motor call!!!!!!\n");
+            //printf("geft motor call!!!!!!\n");
             //changing directions
             if(duty < 0) 
             {
@@ -139,7 +139,7 @@ int mb_motor_set(int motor, double duty){
         }
         case RIGHT_MOTOR:
         {
-            printf("right motor call!!!!!!\n");
+            //printf("right motor call!!!!!!\n");
             if(duty < 0) 
             {
                 rc_gpio_set_value(MDIR2_CHIP,MDIR2_PIN,!(MOT_2_POL));
