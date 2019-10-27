@@ -84,12 +84,12 @@ int mb_get_gains(mb_gains_t* mb_gains)
 {
     printf("Inside get gains");
 	FILE* fp;
-	double temp[5];
+	double temp[8];
 	fp = fopen("gains.txt","r");
 	int i;
 	if (fp != NULL)
 	{ 
-		for (i=0;i<5;i++)
+		for (i=0;i<8;i++)
 		{
 			fscanf(fp,"%lf",&temp[i]);	
 		}
@@ -98,6 +98,9 @@ int mb_get_gains(mb_gains_t* mb_gains)
 		mb_gains->K3 = temp[2];
 		mb_gains->K4 = temp[3];
         mb_gains->Nbar = temp[4];
+        mb_gains->temp1 = temp[5];
+        mb_gains->temp2 = temp[6];
+        mb_gains->temp3 = temp[7];
 	}
 	fclose(fp);
     

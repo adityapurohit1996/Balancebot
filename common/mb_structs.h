@@ -50,6 +50,9 @@ struct mb_gains {
     double K3;
     double K4;
     double Nbar;
+    double temp1; // Can use temp in the code as required
+    double temp2;
+    double temp3;
 };
 
 #endif

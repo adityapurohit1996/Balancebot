@@ -24,6 +24,8 @@
 #include "balancebot.h"
 
 #define CONTROLLER_SWITCH_ANGLE 15*3.14/180
+#define max(a,b) (((a)>(b)) ? (a):(b))
+#define min(a,b) (((a)<(b)) ? (a):(b))
 
 /*******************************************************************************
 * int main() 
@@ -178,8 +180,8 @@ void balancebot_controller(){
 	pthread_mutex_lock(&state_mutex);
 	// Read IMU
 
-	static float last_theta,last_theta_2,last_theta_3,last_phi;
-	mb_state.theta = mpu_data.dmp_TaitBryan[TB_PITCH_X];
+	static float last_theta=0,last_theta_2,last_theta_3,last_phi;
+	mb_state.theta = (mpu_data.dmp_TaitBryan[TB_PITCH_X] + last_theta)/2;
 
 	// Read encoders and update odometry 
 	mb_odometry_update(&mb_odometry, &mb_state);
@@ -214,9 +216,29 @@ void balancebot_controller(){
 		mb_state.u =0.999;
 	}
 
+	if(mb_state.u < -0.1)
+	{
+		mb_motor_set(RIGHT_MOTOR,mb_state.u);
+		mb_motor_set(LEFT_MOTOR,min((mb_state.u *(float)(mb_gains.temp1)),-0.999));
 
-    mb_motor_set(RIGHT_MOTOR,mb_state.u);
-	mb_motor_set(LEFT_MOTOR,mb_state.u);
+	}
+	else if (mb_state.u > 0.1)
+	{
+		mb_motor_set(RIGHT_MOTOR,mb_state.u);
+		mb_motor_set(LEFT_MOTOR,max((mb_state.u *(float)(mb_gains.temp1)),0.999));
+	}
+	else
+	{
+		mb_motor_set(RIGHT_MOTOR,mb_state.u);
+		mb_motor_set(LEFT_MOTOR,mb_state.u);
+
+	}
+
+	
+		
+
+//	}
+    
     
     if(!mb_setpoints.manual_ctl){
     	//send motor commands
