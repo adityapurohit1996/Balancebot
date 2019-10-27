@@ -13,6 +13,7 @@ struct mb_state{
     int     right_encoder;     // right encoder counts since last reading
 
     //outputs
+    float   u;          // Output calculated 
     float   left_cmd;  //left wheel command [-1..1]
     float   right_cmd; //right wheel command [-1..1]
 
@@ -40,6 +41,18 @@ struct mb_odometry{
     float y;        //y position from initialization in m
     float psi;      //orientation from initialization in rad
     float gyro_yaw_last;    //for gyrodometry 
+};
+
+typedef struct mb_gains mb_gains_t;
+struct mb_gains {
+    double K1;
+    double K2;
+    double K3;
+    double K4;
+    double Nbar;
+    double temp1; // Can use temp in the code as required
+    double temp2;
+    double temp3;
 };
 
 #endif

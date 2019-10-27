@@ -78,3 +78,31 @@ int mb_controller_update(mb_state_t* mb_state){
 int mb_controller_cleanup(){
     return 0;
 }
+
+
+int mb_get_gains(mb_gains_t* mb_gains)
+{
+    printf("Inside get gains");
+	FILE* fp;
+	double temp[8];
+	fp = fopen("gains.txt","r");
+	int i;
+	if (fp != NULL)
+	{ 
+		for (i=0;i<8;i++)
+		{
+			fscanf(fp,"%lf",&temp[i]);	
+		}
+		mb_gains->K1 = temp[0];
+		mb_gains->K2 = temp[1];
+		mb_gains->K3 = temp[2];
+		mb_gains->K4 = temp[3];
+        mb_gains->Nbar = temp[4];
+        mb_gains->temp1 = temp[5];
+        mb_gains->temp2 = temp[6];
+        mb_gains->temp3 = temp[7];
+	}
+	fclose(fp);
+    
+    return 0;
+}
