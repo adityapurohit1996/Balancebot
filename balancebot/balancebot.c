@@ -169,26 +169,30 @@ void balancebot_controller(){
 	pthread_mutex_lock(&state_mutex);
 	// Read IMU
 
-	static float last_theta,last_phi;
-	mb_state.theta = mpu_data.dmp_TaitBryan[TB_PITCH_X];
+	static float last_theta=0,last_theta_2,last_theta_3,last_phi;
+	mb_state.theta = (mpu_data.dmp_TaitBryan[TB_PITCH_X] + last_theta)/2;
+
 
 	// Read encoders and update odometry
 	mb_odometry_update(&mb_odometry, &mb_state);
 
-	mb_state.phi = (float)(mb_state.right_encoder + mb_state.left_encoder)*3.14/ENCODER_RES;
+	mb_state.phi = (float)(mb_state.right_encoder + mb_state.left_encoder)*3.14/(ENCODER_RES*GEAR_RATIO);
 
-	mb_state.theta_dot = (mb_state.theta - last_theta) * SAMPLE_RATE_HZ;
+
+	mb_state.theta_dot = (mb_state.theta - last_theta_3) * SAMPLE_RATE_HZ/3;
 	mb_state.phi_dot = (mb_state.phi - last_phi) * SAMPLE_RATE_HZ;
 
 	last_theta = mb_state.theta;
+	last_theta_2 = last_theta;
+	last_theta_3 = last_theta_2;
 	last_phi = mb_state.phi;
 
 
   // Calculate controller outputs
-	mb_controller_update(&mb_state,&mb_setpoints);
+	mb_controller_update(&mb_controls,&mb_state,&mb_setpoints);
   if(!mb_setpoints.manual_ctl){
-		mb_motor_set(RIGHT_MOTOR, mb_state.d1_u);
-		mb_motor_set(LEFT_MOTOR, mb_state.d1_u);
+		mb_motor_set(RIGHT_MOTOR, -mb_state.d1_u);
+		mb_motor_set(LEFT_MOTOR, -mb_state.d1_u);
   }
 
   if(mb_setpoints.manual_ctl){

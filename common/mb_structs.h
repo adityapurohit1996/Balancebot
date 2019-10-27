@@ -14,8 +14,8 @@ struct mb_state{
     int     left_encoder;      // left encoder counts since last reading
     int     right_encoder;     // right encoder counts since last reading
 
-    float d1_u;
-    float d2_u;
+    double d1_u;
+    double d2_u;
     //outputs
     float   left_cmd;  //left wheel command [-1..1]
     float   right_cmd; //right wheel command [-1..1]
@@ -35,7 +35,7 @@ struct mb_setpoints{
     float theta;
     float fwd_velocity; // fwd velocity in m/s
     float turn_velocity; // turn velocity in rad/s
-    bool manual_ctl;
+    int  manual_ctl;
 };
 
 typedef struct mb_controls mb_controls_t;
@@ -44,12 +44,14 @@ struct mb_controls{
     rc_filter_t D1;
     rc_filter_t D2;
 
-    float kp_1 = 1.05;
-    float ki_1 = 0;
-    float kd_1 = 0;
-    float kp_2 = 0.95;
-    float ki_2 = 0;
-    float kd_2 = 0;
+    float kp_1;
+    float ki_1;
+    float kd_1;
+    float F1 ;
+    float kp_2 ;
+    float ki_2;
+    float kd_2 ;
+    float F2 ;
 
 };
 
