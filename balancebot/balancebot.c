@@ -19,7 +19,7 @@
 #include <rc/pthread.h>
 #include <rc/encoder_eqep.h>
 #include <rc/time.h>
-
+#include <ncurses.h>
 
 #include "balancebot.h"
 
@@ -140,6 +140,13 @@ int main(){
 	// done initializing so set state to RUNNING
 	rc_set_state(RUNNING); 
 
+	printf("starting gain thread... \n");
+	pthread_t  gain_thread;
+	initscr();
+    cbreak();
+	nodelay(stdscr, TRUE);
+	rc_pthread_create(&gain_thread, set_gains, (void*) NULL, SCHED_OTHER, 0);
+
 	// Keep looping until state changes to EXITING
 	while(rc_get_state()!=EXITING){
 
@@ -149,8 +156,25 @@ int main(){
 		// always sleep at some point
 		rc_nanosleep(1E9);
 	}
+
+	//save current gains
+	FILE* fp;
+	fp = fopen("gains.txt","w");
+	if (fp != NULL)
+	{ 
+		fprintf(fp,"%f\n",mb_gains.K1);
+		fprintf(fp,"%f\n",mb_gains.K2);
+		fprintf(fp,"%f\n",mb_gains.K3);
+		fprintf(fp,"%f\n",mb_gains.K4);
+		fprintf(fp,"%f\n",mb_gains.Nbar);
+		fprintf(fp,"%f\n",mb_gains.temp1);
+		fprintf(fp,"%f\n",mb_gains.temp2);
+		fprintf(fp,"%f\n",mb_gains.temp3);
+	}
+	fclose(fp);
 	
 	// exit cleanly
+	endwin();
 	rc_mpu_power_off();
 	mb_motor_cleanup();
 	rc_led_cleanup();
@@ -178,6 +202,7 @@ void balancebot_controller(){
 	
 	//lock state mutex
 	pthread_mutex_lock(&state_mutex);
+	pthread_mutex_lock(&gains_mutex);
 	// Read IMU
 
 	static float last_theta=0,last_theta_2,last_theta_3,last_phi;
@@ -261,6 +286,7 @@ void balancebot_controller(){
 	
    	//unlock state mutex
     pthread_mutex_unlock(&state_mutex);
+	pthread_mutex_unlock(&gains_mutex);
 
 }
 
@@ -349,3 +375,72 @@ void* printf_loop(void* ptr){
 	}
 	return NULL;
 } 
+
+void* set_gains(void* ptr) {
+	while(rc_get_state()!=EXITING) {
+		pthread_mutex_lock(&gains_mutex);
+		int ch = getch();
+		
+		if (ch == ERR) 
+			printf("no input\n");
+		else {
+			switch (ch) {
+				case '1':
+					mb_gains.K1 += mb_gains.incre;
+					printf("\n%f %f %f %f %f %f\n", mb_gains.K1, mb_gains.K2, mb_gains.K3, mb_gains.K4, mb_gains.Nbar, mb_gains.incre);
+					break;
+				case '2':
+					mb_gains.K1 -= mb_gains.incre;
+					printf("\n%f %f %f %f %f %f\n", mb_gains.K1, mb_gains.K2, mb_gains.K3, mb_gains.K4, mb_gains.Nbar, mb_gains.incre);
+					break;
+				case '3':
+					mb_gains.K2 += mb_gains.incre;
+					printf("\n%f %f %f %f %f %f\n", mb_gains.K1, mb_gains.K2, mb_gains.K3, mb_gains.K4, mb_gains.Nbar, mb_gains.incre);
+					break;
+				case '4':
+					mb_gains.K2 -= mb_gains.incre;
+					printf("\n%f %f %f %f %f %f\n", mb_gains.K1, mb_gains.K2, mb_gains.K3, mb_gains.K4, mb_gains.Nbar, mb_gains.incre);
+					break;
+				case '5':
+					mb_gains.K3 += mb_gains.incre;
+					printf("\n%f %f %f %f %f %f\n", mb_gains.K1, mb_gains.K2, mb_gains.K3, mb_gains.K4, mb_gains.Nbar, mb_gains.incre);
+					break;
+				case '6':
+					mb_gains.K3 -= mb_gains.incre;
+					printf("\n%f %f %f %f %f %f\n", mb_gains.K1, mb_gains.K2, mb_gains.K3, mb_gains.K4, mb_gains.Nbar, mb_gains.incre);
+					break;
+				case '7':
+					mb_gains.K4 += mb_gains.incre;
+					printf("\n%f %f %f %f %f %f\n", mb_gains.K1, mb_gains.K2, mb_gains.K3, mb_gains.K4, mb_gains.Nbar, mb_gains.incre);
+					break;
+				case '8':
+					mb_gains.K4 -= mb_gains.incre;
+					printf("\n%f %f %f %f %f %f\n", mb_gains.K1, mb_gains.K2, mb_gains.K3, mb_gains.K4, mb_gains.Nbar, mb_gains.incre);
+					break;
+				case '9':
+					mb_gains.Nbar += mb_gains.incre;
+					printf("\n%f %f %f %f %f %f\n", mb_gains.K1, mb_gains.K2, mb_gains.K3, mb_gains.K4, mb_gains.Nbar, mb_gains.incre);
+					break;
+				case '0':
+					mb_gains.Nbar -= mb_gains.incre;
+					printf("\n%f %f %f %f %f %f\n", mb_gains.K1, mb_gains.K2, mb_gains.K3, mb_gains.K4, mb_gains.Nbar, mb_gains.incre);
+					break;
+				case 'q':
+					mb_gains.incre += 0.01;
+					printf("\n%f %f %f %f %f %f\n", mb_gains.K1, mb_gains.K2, mb_gains.K3, mb_gains.K4, mb_gains.Nbar, mb_gains.incre);
+					break;
+				case 'w':
+					mb_gains.incre -= 0.01;
+					printf("\n%f %f %f %f %f %f\n", mb_gains.K1, mb_gains.K2, mb_gains.K3, mb_gains.K4, mb_gains.Nbar, mb_gains.incre);
+					break;
+				default:
+					printf("%c\n",ch);
+					break;
+			}
+		}
+
+		pthread_mutex_unlock(&gains_mutex);
+		rc_nanosleep(1E9/5);
+	}
+	return NULL;
+}

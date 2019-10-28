@@ -4,7 +4,7 @@ TARGET = ../bin/balancebot
 CC			:= gcc
 LINKER		:= gcc -o
 CFLAGS		:= -std=c99 -c -Wall -g
-LFLAGS		:= -lm -lrt -lpthread -l:librobotcontrol.so.1
+LFLAGS		:= -lm -lrt -lcurses -lpthread -l:librobotcontrol.so.1
 
 SOURCES		:= $(wildcard *.c)
 SOURCES		:= $(SOURCES) $(wildcard ../common/*.c)
@@ -63,4 +63,3 @@ runonboot:
 	@$(MAKE) install --no-print-directory
 	@$(LINK) $(DESTDIR)$(prefix)/bin/$(TARGET) $(LINKDIR)/$(LINKNAME)
 	@echo "$(TARGET) Set to Run on Boot"
-

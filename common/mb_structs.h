@@ -53,6 +53,7 @@ struct mb_gains {
     double temp1; // Can use temp in the code as required
     double temp2;
     double temp3;
+    double incre;
 };
 
 #endif

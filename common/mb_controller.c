@@ -101,6 +101,7 @@ int mb_get_gains(mb_gains_t* mb_gains)
         mb_gains->temp1 = temp[5];
         mb_gains->temp2 = temp[6];
         mb_gains->temp3 = temp[7];
+        mb_gains->incre = 0.01;
 	}
 	fclose(fp);
     
