@@ -20,6 +20,7 @@
 #include <rc/encoder_eqep.h>
 #include <rc/time.h>
 #include <ncurses.h>
+#include <unistd.h>
 
 #include "balancebot.h"
 
@@ -31,7 +32,7 @@
 * int main() 
 *
 *******************************************************************************/
-int main(){
+int main(int argc, char *argv[]){
 	// make sure another instance isn't running
     // if return value is -3 then a background process is running with
     // higher privaledges and we couldn't kill it, in which case we should
@@ -49,6 +50,15 @@ int main(){
         fprintf(stderr,"Failed to set governor to PERFORMANCE\n");
         return -1;
     }
+
+	int c;
+	if(!strcmp("dsm", argv[1])) {
+		mb_setpoints.manual_ctl = 0;
+	} 
+	else {
+		mb_setpoints.manual_ctl = 1;
+		}
+	
 
 	// initialize enocders
     if(rc_encoder_eqep_init()==-1){
@@ -141,11 +151,11 @@ int main(){
 	rc_set_state(RUNNING); 
 
 	printf("starting gain thread... \n");
-	pthread_t  gain_thread;
-	initscr();
-    cbreak();
-	nodelay(stdscr, TRUE);
-	rc_pthread_create(&gain_thread, set_gains, (void*) NULL, SCHED_OTHER, 0);
+	// pthread_t  gain_thread;
+	// initscr();
+    // cbreak();
+	// nodelay(stdscr, TRUE);
+	// rc_pthread_create(&gain_thread, set_gains, (void*) NULL, SCHED_OTHER, 0);
 
 	// Keep looping until state changes to EXITING
 	while(rc_get_state()!=EXITING){
@@ -174,7 +184,7 @@ int main(){
 	fclose(fp);
 	
 	// exit cleanly
-	endwin();
+	// endwin();
 	rc_mpu_power_off();
 	mb_motor_cleanup();
 	rc_led_cleanup();
@@ -254,8 +264,8 @@ void balancebot_controller(){
 	// }
 	// else
 	// {
-		mb_motor_set(RIGHT_MOTOR,mb_state.u);
-		mb_motor_set(LEFT_MOTOR,mb_state.u);
+		// mb_motor_set(RIGHT_MOTOR,mb_state.u);
+		// mb_motor_set(LEFT_MOTOR,mb_state.u);
 
 	// }
 
@@ -263,7 +273,6 @@ void balancebot_controller(){
 		
 
 //	}
-    
     
     if(!mb_setpoints.manual_ctl){
     	//send motor commands
@@ -300,6 +309,18 @@ void balancebot_controller(){
 *
 *******************************************************************************/
 void* setpoint_control_loop(void* ptr){
+	    double drive_stick, turn_stick, input_mode; // input sticks
+        // int i, ch, chan, stdin_timeout = 0; // for stdin input
+        // char in_str[11];
+
+		// while(rc_get_state()!=EXITING){
+		// // clear out input of old data before waiting for new data
+		// if(m_setpoints.man == STDIN) fseek(stdin,0,SEEK_END);
+		// // sleep at beginning of loop so we can use the 'continue' statement
+		// rc_usleep(1000000/SETPOINT_MANAGER_HZ);
+		// // nothing to do if paused, go back to beginning of loop
+		// if(rc_get_state() != RUNNING || m_input_mode == NONE) continue;
+		// }
 
 	while(1){
 
@@ -307,7 +328,18 @@ void* setpoint_control_loop(void* ptr){
 				// TODO: Handle the DSM data from the Spektrum radio reciever
 				// You may should implement switching between manual and autonomous mode
 				// using channel 5 of the DSM data.
+			turn_stick  = rc_dsm_ch_normalized(DSM_TURN_CH) * DSM_TURN_POL;
+			drive_stick = rc_dsm_ch_normalized(DSM_DRIVE_CH)* DSM_DRIVE_POL;
+			input_mode = rc_dsm_ch_normalized(DSM_CHOOSE_MODE)* DSM_DRIVE_POL;
+
+			printf("%f",turn_stick);
+			printf("/n");
+			printf("%f",input_mode);
+			printf("\n");
+			printf("%f",drive_stick);
+		
 		}
+
 	 	rc_nanosleep(1E9 / RC_CTL_HZ);
 	}
 	return NULL;
@@ -352,24 +384,24 @@ void* printf_loop(void* ptr){
 		last_state = new_state;
 		
 		if(new_state == RUNNING){
-			printf("\r");
-			//Add Print stattements here, do not follow with /n
-			pthread_mutex_lock(&state_mutex);
-			printf("%7.3f  |", mb_state.theta);
-			printf("%7.3f  |", mb_state.phi);
-			printf("%7.3f  |", mb_state.theta_dot);
-			printf("%7.3f  |", mb_state.phi_dot);
-			printf("%7.3f  |", mb_state.u);
-			printf("%7d  |", mb_state.left_encoder);
-			printf("%7d  |", mb_state.right_encoder);
-			// printf("%7.3f  |", mb_state.opti_x);
-			// printf("%7.3f  |", mb_state.opti_y);
-			// printf("%7.3f  |", mb_state.opti_yaw);
-			printf("%7.3f  |", mb_odometry.x);
-			printf("%7.3f  |", mb_odometry.y);
-			printf("%7.3f  |", mb_odometry.psi);
-			pthread_mutex_unlock(&state_mutex);
-			fflush(stdout);
+			// printf("\r");
+			// //Add Print stattements here, do not follow with /n
+			// pthread_mutex_lock(&state_mutex);
+			// printf("%7.3f  |", mb_state.theta);
+			// printf("%7.3f  |", mb_state.phi);
+			// printf("%7.3f  |", mb_state.theta_dot);
+			// printf("%7.3f  |", mb_state.phi_dot);
+			// printf("%7.3f  |", mb_state.u);
+			// printf("%7d  |", mb_state.left_encoder);
+			// printf("%7d  |", mb_state.right_encoder);
+			// // printf("%7.3f  |", mb_state.opti_x);
+			// // printf("%7.3f  |", mb_state.opti_y);
+			// // printf("%7.3f  |", mb_state.opti_yaw);
+			// printf("%7.3f  |", mb_odometry.x);
+			// printf("%7.3f  |", mb_odometry.y);
+			// printf("%7.3f  |", mb_odometry.psi);
+			// pthread_mutex_unlock(&state_mutex);
+			// fflush(stdout);
 		}
 		rc_nanosleep(1E9/PRINTF_HZ);
 	}

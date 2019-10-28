@@ -36,6 +36,15 @@
 #define MPWM1_PIN                  'A' // PWM pin for first motor
 #define MPWM2_PIN                  'B' //PWM pin for second motor
 #define PWM_SUBSYSTEM               1 // PWM subsystem
+#define SETPOINT_MANAGER_HZ	        100
+
+// DSM channel config
+#define DSM_DRIVE_POL		        1
+#define DSM_TURN_POL		        1
+#define DSM_DRIVE_CH		        3
+#define DSM_TURN_CH		            2
+#define DSM_CHOOSE_MODE             5		            
+#define DSM_DEAD_ZONE		        0.04
 
 
 #endif
