@@ -241,23 +241,23 @@ void balancebot_controller(){
 		mb_state.u =0.999;
 	}
 
-	if(mb_state.u < -0.1)
-	{
-		mb_motor_set(RIGHT_MOTOR,mb_state.u);
-		mb_motor_set(LEFT_MOTOR,min((mb_state.u *(float)(mb_gains.temp1)),-0.999));
+	// if(mb_state.u < -0.1)
+	// {
+	// 	mb_motor_set(RIGHT_MOTOR,mb_state.u);
+	// 	mb_motor_set(LEFT_MOTOR,min((mb_state.u *(float)(mb_gains.temp1)),-0.999));
 
-	}
-	else if (mb_state.u > 0.1)
-	{
-		mb_motor_set(RIGHT_MOTOR,mb_state.u);
-		mb_motor_set(LEFT_MOTOR,max((mb_state.u *(float)(mb_gains.temp1)),0.999));
-	}
-	else
-	{
+	// }
+	// else if (mb_state.u > 0.1)
+	// {
+	// 	mb_motor_set(RIGHT_MOTOR,mb_state.u);
+	// 	mb_motor_set(LEFT_MOTOR,max((mb_state.u *(float)(mb_gains.temp1)),0.999));
+	// }
+	// else
+	// {
 		mb_motor_set(RIGHT_MOTOR,mb_state.u);
 		mb_motor_set(LEFT_MOTOR,mb_state.u);
 
-	}
+	// }
 
 	
 		
