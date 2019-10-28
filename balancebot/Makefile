@@ -4,7 +4,7 @@ TARGET = ../bin/balancebot
 CC			:= gcc
 LINKER		:= gcc -o
 CFLAGS		:= -std=c99 -c -Wall -g
-LFLAGS		:= -lm -lrt -lpthread -l:librobotcontrol.so.1
+LFLAGS		:= -lm -lrt -lpthread -lcurses -l:librobotcontrol.so.1
 
 SOURCES		:= $(wildcard *.c)
 SOURCES		:= $(SOURCES) $(wildcard ../common/*.c)

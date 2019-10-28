@@ -53,6 +53,8 @@ struct mb_controls{
     float kd_2 ;
     float F2 ;
 
+    float incre;
+
 };
 
 typedef struct mb_odometry mb_odometry_t;

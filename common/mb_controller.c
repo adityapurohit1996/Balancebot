@@ -43,6 +43,8 @@ int mb_controller_init(mb_controls_t* mb_controls, mb_setpoints_t* mb_setpoints)
     rc_filter_enable_saturation(&mb_controls->D2, -THETA_REF_MAX, THETA_REF_MAX);
     rc_filter_enable_soft_start(&mb_controls->D2, SOFT_START_SEC);
 
+    mb_controls->incre = 0.01;
+
     return 0;
 }
 

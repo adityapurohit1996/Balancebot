@@ -19,6 +19,7 @@
 #include <rc/pthread.h>
 #include <rc/encoder_eqep.h>
 #include <rc/time.h>
+#include <ncurses.h>
 
 
 #include "balancebot.h"
@@ -88,6 +89,12 @@ int main(){
 	pthread_t  setpoint_control_thread;
 	rc_pthread_create(&setpoint_control_thread, setpoint_control_loop, (void*) NULL, SCHED_FIFO, 50);
 
+	printf("starting gain thread... \n");
+	pthread_t  gain_thread;
+	initscr();
+    cbreak();
+	nodelay(stdscr, TRUE);
+	rc_pthread_create(&gain_thread, set_gains, (void*) NULL, SCHED_OTHER, 0);
 
 	// TODO: start motion capture message recieve thread
 
@@ -109,6 +116,7 @@ int main(){
 	//initialize state mutex
     pthread_mutex_init(&state_mutex, NULL);
     pthread_mutex_init(&setpoint_mutex, NULL);
+	pthread_mutex_init(&gains_mutex, NULL);
 
 	//attach controller function to IMU interrupt
 	printf("initializing controller...\n");
@@ -142,7 +150,20 @@ int main(){
 		rc_nanosleep(1E9);
 	}
 
+	//save current gains
+	FILE* fp;
+	fp = fopen(CFG_PATH,"w");
+	if (fp != NULL)
+	{ 
+		fprintf(fp,"%f %f %f %f\n",mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.F1);
+		fprintf(fp,"%f %f %f %f\n",mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.F2);
+		fprintf(fp,"1.0 0.0 0.0 1\n");
+		fprintf(fp,"1.0 0.0 0.0 1\n");
+	}
+	fclose(fp);
+
 	// exit cleanly
+	endwin();
 	rc_mpu_power_off();
 	mb_motor_cleanup(&mb_controls);
 	rc_led_cleanup();
@@ -166,6 +187,7 @@ void balancebot_controller(){
 
 
 	//lock state mutex
+	pthread_mutex_lock(&gains_mutex);
 	pthread_mutex_lock(&state_mutex);
 	// Read IMU
 
@@ -211,6 +233,7 @@ void balancebot_controller(){
 	*/
 
    	//unlock state mutex
+	pthread_mutex_unlock(&gains_mutex);
     pthread_mutex_unlock(&state_mutex);
 
 }
@@ -297,6 +320,99 @@ void* printf_loop(void* ptr){
 			fflush(stdout);
 		}
 		rc_nanosleep(1E9/PRINTF_HZ);
+	}
+	return NULL;
+}
+
+void* set_gains(void* ptr) {
+	while(rc_get_state()!=EXITING) {
+		pthread_mutex_lock(&gains_mutex);
+		int ch = getch();
+		
+		if (ch == ERR) 
+			printf("no input\n");
+		else {
+			switch (ch) {
+				case '1':
+					mb_controls.kp_1 += mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case '2':
+					mb_controls.kp_1 -= mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case '3':
+					mb_controls.ki_1 += mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case '4':
+					mb_controls.ki_1 -= mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case '5':
+					mb_controls.kd_1 += mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case '6':
+					mb_controls.kd_1 -= mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case 'q':
+					mb_controls.kp_2 += mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case 'w':
+					mb_controls.kp_2 -= mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case 'e':
+					mb_controls.ki_2 += mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case 'r':
+					mb_controls.ki_2 -= mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case 't':
+					mb_controls.kd_2 += mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case 'y':
+					mb_controls.kd_2 -= mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case 'a':
+					mb_controls.F1 += mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case 's':
+					mb_controls.F1 -= mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case 'd':
+					mb_controls.F2 += mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case 'f':
+					mb_controls.F2 -= mb_controls.incre;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case 'z':
+					mb_controls.incre += 0.01;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				case 'x':
+					mb_controls.incre -= 0.01;
+					printf("\n%f %f %f %f %f %f %f\n", mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.incre);
+					break;
+				default:
+					printf("%c\n",ch);
+					break;
+			}
+		}
+
+		pthread_mutex_unlock(&gains_mutex);
+		rc_nanosleep(1E9/5);
 	}
 	return NULL;
 }
