@@ -42,12 +42,14 @@ typedef struct mb_controls mb_controls_t;
 struct mb_controls{
 
     rc_filter_t D1;
+    rc_filter_t Di;
     rc_filter_t D2;
 
     float kp_1;
     float ki_1;
     float kd_1;
     float F1 ;
+    float gyro_offset;
     float kp_2 ;
     float ki_2;
     float kd_2 ;

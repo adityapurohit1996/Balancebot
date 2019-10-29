@@ -36,6 +36,7 @@
 #define MPWM1_PIN                  'A' // PWM pin for first motor
 #define MPWM2_PIN                  'B' //PWM pin for second motor
 #define PWM_SUBSYSTEM               1 // PWM subsystem
+#define THRESHOLD_ANGLE             1*3.14/180 // Threshold angle for I controller
 
 //for controllers
 #define SOFT_START_SEC		0.7

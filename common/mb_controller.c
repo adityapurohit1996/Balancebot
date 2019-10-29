@@ -22,7 +22,7 @@
 int mb_controller_init(mb_controls_t* mb_controls, mb_setpoints_t* mb_setpoints){
     mb_controller_load_config(mb_controls);
     /* TODO initialize your controllers here*/
-    mb_setpoints->theta = 0;
+    mb_setpoints->theta = mb_controls->gyro_offset;
     mb_setpoints->manual_ctl = 0;
 	mb_setpoints->fwd_velocity = 0;
     /*
@@ -33,12 +33,15 @@ int mb_controller_init(mb_controls_t* mb_controls, mb_setpoints_t* mb_setpoints)
     double D2_num[] = D2_NUM;
     double D2_den[] = D2_DEN;
     */
-	rc_filter_pid(&mb_controls->D1, mb_controls->kp_1, mb_controls->ki_1, mb_controls->kd_1, 1/mb_controls->F1, DT);
+	rc_filter_pid(&mb_controls->D1, mb_controls->kp_1, 0, mb_controls->kd_1, 1/mb_controls->F1, DT);
+    rc_filter_pid(&mb_controls->Di, 0, mb_controls->ki_1, 0, 1/mb_controls->F1, DT);
 	rc_filter_pid(&mb_controls->D2, mb_controls->kp_2, mb_controls->ki_2, mb_controls->kd_2, DT*4, DT);
 
 
     rc_filter_enable_saturation(&mb_controls->D1, -1.0, 1.0);
     rc_filter_enable_soft_start(&mb_controls->D1, SOFT_START_SEC);
+    rc_filter_enable_saturation(&mb_controls->Di, -0.7, 0.7);
+    rc_filter_enable_soft_start(&mb_controls->Di, SOFT_START_SEC);
 
     rc_filter_enable_saturation(&mb_controls->D2, -THETA_REF_MAX, THETA_REF_MAX);
     rc_filter_enable_soft_start(&mb_controls->D2, SOFT_START_SEC);
@@ -60,7 +63,7 @@ int mb_controller_init(mb_controls_t* mb_controls, mb_setpoints_t* mb_setpoints)
 
 
 int mb_controller_load_config(mb_controls_t* mb_controls){
-    double temp[8];
+    double temp[9];
     int i;
     FILE* fp = fopen(CFG_PATH, "r");
     if (fp == NULL){
@@ -76,10 +79,11 @@ int mb_controller_load_config(mb_controls_t* mb_controls){
     mb_controls->ki_1 = temp[1];
     mb_controls->kd_1 = temp[2];
     mb_controls->F1 = temp[3];
-    mb_controls->kp_2 = temp[4];
-    mb_controls->ki_2 = temp[5];
-    mb_controls->kd_2 = temp[6];
-    mb_controls->F2 = temp[7];
+    mb_controls->gyro_offset = temp[4];
+    mb_controls->kp_2 = temp[5];
+    mb_controls->ki_2 = temp[6];
+    mb_controls->kd_2 = temp[7];
+    mb_controls->F2 = temp[8];
     fclose(fp);
 	}
     return 0;
@@ -109,7 +113,13 @@ int mb_controller_update(mb_controls_t* mb_controls, mb_state_t* mb_state, mb_se
     }
     else mb_setpoints->theta = 0.0;
     */
-    mb_state->d1_u = rc_filter_march(&mb_controls->D1,(mb_setpoints->theta-mb_state->theta));
+    static float theta_error;
+    theta_error =  mb_setpoints->theta-mb_state->theta;
+    mb_state->d1_u = rc_filter_march(&mb_controls->D1,theta_error);
+    if(theta_error< -(THRESHOLD_ANGLE) || theta_error > THRESHOLD_ANGLE)
+    {
+        mb_state->d1_u += rc_filter_march(&mb_controls->Di,theta_error);
+    }
     return 0;
 }
 
@@ -125,7 +135,18 @@ int mb_controller_update(mb_controls_t* mb_controls, mb_state_t* mb_state, mb_se
 
 int mb_controller_cleanup(mb_controls_t* mb_controls){
     rc_filter_free(&mb_controls->D1);
+    rc_filter_free(&mb_controls->Di);
     rc_filter_free(&mb_controls->D2);
     //rc_filter_free(&mb_controls->D3);
     return 0;
+}
+
+float maximum (float a, float b)
+{
+    return a > b ? a : b;
+}
+
+float minimum (float a, float b)
+{
+    return a < b ? a : b;
 }

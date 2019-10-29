@@ -155,7 +155,7 @@ int main(){
 	fp = fopen(CFG_PATH,"w");
 	if (fp != NULL)
 	{ 
-		fprintf(fp,"%f %f %f %f\n",mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.F1);
+		fprintf(fp,"%f %f %f %f %f\n",mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.F1,mb_controls.gyro_offset);
 		fprintf(fp,"%f %f %f %f\n",mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.F2);
 		fprintf(fp,"1.0 0.0 0.0 1\n");
 		fprintf(fp,"1.0 0.0 0.0 1\n");
@@ -212,9 +212,19 @@ void balancebot_controller(){
 
   // Calculate controller outputs
 	mb_controller_update(&mb_controls,&mb_state,&mb_setpoints);
+	
   if(!mb_setpoints.manual_ctl){
-		mb_motor_set(RIGHT_MOTOR, -mb_state.d1_u);
-		mb_motor_set(LEFT_MOTOR, -mb_state.d1_u);
+	  if(mb_state.d1_u > 0)
+	  {
+		mb_motor_set(RIGHT_MOTOR, maximum(-mb_state.d1_u,-0.999));
+		mb_motor_set(LEFT_MOTOR, maximum(-mb_state.d1_u,-0.999));
+	  }
+	  else
+	  {
+		mb_motor_set(RIGHT_MOTOR, minimum(-mb_state.d1_u,0.999));
+		mb_motor_set(LEFT_MOTOR, minimum(-mb_state.d1_u,0.999));
+	  }
+		
   }
 
   if(mb_setpoints.manual_ctl){
@@ -279,7 +289,8 @@ void* printf_loop(void* ptr){
 	while(rc_get_state()!=EXITING){
 		new_state = rc_get_state();
 		// check if this is the first time since being paused
-		if(new_state==RUNNING && last_state!=RUNNING){
+		/*
+		if(new_state==RUNNING){
 			printf("\nRUNNING: Hold upright to balance.\n");
 			printf("                 SENSORS               |            MOCAP            |");
 			printf("\n");
@@ -295,31 +306,33 @@ void* printf_loop(void* ptr){
 
 			printf("\n");
 		}
+		
 		else if(new_state==PAUSED && last_state!=PAUSED){
 			printf("\nPAUSED\n");
 		}
+		
 		last_state = new_state;
-
+		*/
 		if(new_state == RUNNING){
 			printf("\r");
 			//Add Print stattements here, do not follow with /n
 			pthread_mutex_lock(&state_mutex);
-			// printf("%7.3f  |", mb_state.theta);
-			// printf("%7.3f  |", mb_state.phi);
+			printf("theta = %7.3f  |", mb_state.theta);
+			printf("phi = %7.3f  |\n", mb_state.phi);
 			// printf("%7.3f  |", mb_state.theta_dot);
 			// printf("%7.3f  |", mb_state.phi_dot);
-			printf("%7d  |", mb_state.left_encoder);
-			printf("%7d  |", mb_state.right_encoder);
+			//printf("%7d  |", mb_state.left_encoder);
+			//printf("%7d  |", mb_state.right_encoder);
 			// printf("%7.3f  |", mb_state.opti_x);
 			// printf("%7.3f  |", mb_state.opti_y);
 			// printf("%7.3f  |", mb_state.opti_yaw);
-			printf("%7.3f  |", mb_odometry.x);
-			printf("%7.3f  |", mb_odometry.y);
-			printf("%7.3f  |", mb_odometry.psi);
+			//printf("%7.3f  |", mb_odometry.x);
+			//printf("%7.3f  |", mb_odometry.y);
+			//printf("%7.3f  |", mb_odometry.psi);
 			pthread_mutex_unlock(&state_mutex);
 			fflush(stdout);
 		}
-		rc_nanosleep(1E9/PRINTF_HZ);
+		rc_nanosleep(4E9/PRINTF_HZ);
 	}
 	return NULL;
 }
@@ -327,8 +340,9 @@ void* printf_loop(void* ptr){
 void* set_gains(void* ptr) {
 	while(rc_get_state()!=EXITING) {
 		pthread_mutex_lock(&gains_mutex);
-		int ch = getch();
-		
+		//int ch = getch();
+		mb_controller_load_config(&mb_controls);
+		/*
 		if (ch == ERR) 
 			printf("no input\n");
 		else {
@@ -410,9 +424,9 @@ void* set_gains(void* ptr) {
 					break;
 			}
 		}
-
+		*/
 		pthread_mutex_unlock(&gains_mutex);
-		rc_nanosleep(1E9/5);
+		rc_nanosleep(1E10/5);
 	}
 	return NULL;
 }
