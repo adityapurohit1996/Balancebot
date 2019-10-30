@@ -50,16 +50,7 @@ int main(int argc, char *argv[]){
         fprintf(stderr,"Failed to set governor to PERFORMANCE\n");
         return -1;
     }
-
-	int c;
-	if(!strcmp("dsm", argv[1])) {
-		mb_setpoints.manual_ctl = 0;
-	} 
-	else {
-		mb_setpoints.manual_ctl = 1;
-		}
 	
-
 	// initialize enocders
     if(rc_encoder_eqep_init()==-1){
         fprintf(stderr,"ERROR: failed to initialize eqep encoders\n");
@@ -138,10 +129,6 @@ int main(int argc, char *argv[]){
 	printf("initializing motors...\n");
 	mb_motor_init();
 
-	printf("getting gains");
-	mb_get_gains(&mb_gains);
-	printf("%lf\t%lf\t%lf\t%lf\n",mb_gains.K1,mb_gains.K2,mb_gains.K3,mb_gains.K4);
-
 	printf("resetting encoders...\n");
 	rc_encoder_eqep_write(1, 0);
 	rc_encoder_eqep_write(2, 0);
@@ -216,16 +203,17 @@ void balancebot_controller(){
 	//lock state mutex
 	pthread_mutex_lock(&gains_mutex);
 	pthread_mutex_lock(&state_mutex);
-	pthread_mutex_lock(&gains_mutex);
 	// Read IMU
 
 	static float last_theta=0,last_theta_2,last_theta_3,last_phi;
 	mb_state.theta = (mpu_data.dmp_TaitBryan[TB_PITCH_X] + last_theta)/2;
 
+
 	// Read encoders and update odometry
 	mb_odometry_update(&mb_odometry, &mb_state);
 
 	mb_state.phi = (float)(mb_state.right_encoder + mb_state.left_encoder)*3.14/(ENCODER_RES*GEAR_RATIO);
+
 
 	mb_state.theta_dot = (mb_state.theta - last_theta_3) * SAMPLE_RATE_HZ/3;
 	mb_state.phi_dot = (mb_state.phi - last_phi) * SAMPLE_RATE_HZ;
@@ -235,43 +223,6 @@ void balancebot_controller(){
 	last_theta_3 = last_theta_2;
 	last_phi = mb_state.phi;
 
-	// Calculate controller outputs
-	if((mb_state.theta>-CONTROLLER_SWITCH_ANGLE) || (mb_state.theta<CONTROLLER_SWITCH_ANGLE))
-	{
-	mb_state.u = mb_gains.K1*mb_state.theta + mb_gains.K2*mb_state.theta_dot - mb_gains.K3*mb_state.phi - mb_gains.K4*mb_state.phi_dot + mb_gains.Nbar*0.001;
-	}
-	else
-	{
-	mb_state.u = mb_gains.K1*1.2*mb_state.theta + mb_gains.K2*mb_state.theta_dot - mb_gains.K3*mb_state.phi - mb_gains.K4*mb_state.phi_dot + mb_gains.Nbar*0.001;
-
-	}
-
-	if(mb_state.u < -1)
-	{
-		mb_state.u = -0.999;
-	}
-	else if(mb_state.u > 1)
-	{
-		mb_state.u =0.999;
-	}
-
-	// if(mb_state.u < -0.1)
-	// {
-	// 	mb_motor_set(RIGHT_MOTOR,mb_state.u);
-	// 	mb_motor_set(LEFT_MOTOR,min((mb_state.u *(float)(mb_gains.temp1)),-0.999));
-
-	// }
-	// else if (mb_state.u > 0.1)
-	// {
-	// 	mb_motor_set(RIGHT_MOTOR,mb_state.u);
-	// 	mb_motor_set(LEFT_MOTOR,max((mb_state.u *(float)(mb_gains.temp1)),0.999));
-	// }
-	// else
-	// {
-		// mb_motor_set(RIGHT_MOTOR,mb_state.u);
-		// mb_motor_set(LEFT_MOTOR,mb_state.u);
-
-	// }
 
   // Calculate controller outputs
 	mb_controller_update(&mb_controls,&mb_state,&mb_setpoints);
@@ -291,6 +242,8 @@ void balancebot_controller(){
   }
 
   if(mb_setpoints.manual_ctl){
+	  mb_motor_set(RIGHT_MOTOR, 0);
+	  mb_motor_set(LEFT_MOTOR, 0);
     //send motor commands
   }
 	/*
@@ -308,9 +261,9 @@ void balancebot_controller(){
    	//unlock state mutex
 	pthread_mutex_unlock(&gains_mutex);
     pthread_mutex_unlock(&state_mutex);
-	pthread_mutex_unlock(&gains_mutex);
 
 }
+
 
 
 
@@ -345,16 +298,16 @@ void* setpoint_control_loop(void* ptr){
 			drive_stick = rc_dsm_ch_normalized(DSM_DRIVE_CH)* DSM_DRIVE_POL;
 			input_mode = rc_dsm_ch_normalized(DSM_CHOOSE_MODE)* DSM_DRIVE_POL;
 
-			printf("%f",turn_stick);
-			printf("/n");
-			printf("%f",input_mode);
-			printf("\n");
-			printf("%f",drive_stick);
+			printf("%f %f %f\n",turn_stick, drive_stick, input_mode);
+			if (input_mode) 
+				mb_setpoints.manual_ctl = 1;
+			else
+				mb_setpoints.manual_ctl = 0;
 		
 		}
 
-	 	rc_nanosleep(1E9 / RC_CTL_HZ);
-	}
+	 	rc_nanosleep(1E9 / 5);//RC_CTL_HZ
+	} 
 	return NULL;
 }
 
@@ -374,51 +327,50 @@ void* printf_loop(void* ptr){
 	while(rc_get_state()!=EXITING){
 		new_state = rc_get_state();
 		// check if this is the first time since being paused
-		/*
-		if(new_state==RUNNING){
-			printf("\nRUNNING: Hold upright to balance.\n");
-			printf("                 SENSORS               |            MOCAP            |");
-			printf("\n");
-			printf("    θ    |");
-			printf("    φ    |");
-			printf("theta_dot |");
-			printf("phi_dot   |");
-			printf("u         |");
-			printf("  L Enc  |");
-			printf("  R Enc  |");
-			printf("    X    |");
-			printf("    Y    |");
-			printf("    ψ    |");
+		// if(new_state==RUNNING){
+		// 	printf("\nRUNNING: Hold upright to balance.\n");
+		// 	printf("                 SENSORS               |            MOCAP            |");
+		// 	printf("\n");
+		// 	printf("    θ    |");
+		// 	printf("    φ    |");
+		// 	printf("theta_dot |");
+		// 	printf("phi_dot   |");
+		// 	printf("u         |");
+		// 	printf("  L Enc  |");
+		// 	printf("  R Enc  |");
+		// 	printf("    X    |");
+		// 	printf("    Y    |");
+		// 	printf("    ψ    |");
 
-			printf("\n");
-		}
+		// 	printf("\n");
+		// }
 		
-		else if(new_state==PAUSED && last_state!=PAUSED){
-			printf("\nPAUSED\n");
-		}
+		// else if(new_state==PAUSED && last_state!=PAUSED){
+		// 	printf("\nPAUSED\n");
+		// }
 		
 		last_state = new_state;
-		*/
-		if(new_state == RUNNING){
-			printf("\r");
-			//Add Print stattements here, do not follow with /n
-			pthread_mutex_lock(&state_mutex);
-			printf("theta = %7.3f  |", mb_state.theta);
-			printf("phi = %7.3f  |\n", mb_state.phi);
-			// printf("%7.3f  |", mb_state.theta_dot);
-			// printf("%7.3f  |", mb_state.phi_dot);
-			//printf("%7d  |", mb_state.left_encoder);
-			//printf("%7d  |", mb_state.right_encoder);
-			// printf("%7.3f  |", mb_state.opti_x);
-			// printf("%7.3f  |", mb_state.opti_y);
-			// printf("%7.3f  |", mb_state.opti_yaw);
-			//printf("%7.3f  |", mb_odometry.x);
-			//printf("%7.3f  |", mb_odometry.y);
-			//printf("%7.3f  |", mb_odometry.psi);
-			pthread_mutex_unlock(&state_mutex);
-			fflush(stdout);
-		}
-		rc_nanosleep(4E9/PRINTF_HZ);
+		
+		// if(new_state == RUNNING){
+		// 	printf("\r");
+		// 	//Add Print stattements here, do not follow with /n
+		// 	pthread_mutex_lock(&state_mutex);
+		// 	printf("theta = %7.3f  |", mb_state.theta);
+		// 	printf("phi = %7.3f  |\n", mb_state.phi);
+		// 	// printf("%7.3f  |", mb_state.theta_dot);
+		// 	// printf("%7.3f  |", mb_state.phi_dot);
+		// 	//printf("%7d  |", mb_state.left_encoder);
+		// 	//printf("%7d  |", mb_state.right_encoder);
+		// 	// printf("%7.3f  |", mb_state.opti_x);
+		// 	// printf("%7.3f  |", mb_state.opti_y);
+		// 	// printf("%7.3f  |", mb_state.opti_yaw);
+		// 	//printf("%7.3f  |", mb_odometry.x);
+		// 	//printf("%7.3f  |", mb_odometry.y);
+		// 	//printf("%7.3f  |", mb_odometry.psi);
+		// 	pthread_mutex_unlock(&state_mutex);
+		// 	fflush(stdout);
+		// }
+		// rc_nanosleep(4E9/PRINTF_HZ);
 	}
 	return NULL;
 }
