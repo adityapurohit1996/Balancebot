@@ -22,7 +22,7 @@
 int mb_controller_init(mb_controls_t* mb_controls, mb_setpoints_t* mb_setpoints){
     mb_controller_load_config(mb_controls);
     /* TODO initialize your controllers here*/
-    mb_setpoints->theta = mb_controls->gyro_offset;
+   // mb_setpoints->theta = mb_controls->gyro_offset;
     mb_setpoints->manual_ctl = 0;
 	mb_setpoints->fwd_velocity = 0;
     /*
@@ -63,7 +63,7 @@ int mb_controller_init(mb_controls_t* mb_controls, mb_setpoints_t* mb_setpoints)
 
 
 int mb_controller_load_config(mb_controls_t* mb_controls){
-    double temp[9];
+    float temp[10];
     int i;
     FILE* fp = fopen(CFG_PATH, "r");
     if (fp == NULL){
@@ -71,19 +71,20 @@ int mb_controller_load_config(mb_controls_t* mb_controls){
     }
     else
     {
-    for (i=0;i<8;i++)
+    for (i=0;i<10;i++)
     {
-        fscanf(fp,"%lf",&temp[i]);	
+        fscanf(fp,"%f",&temp[i]);	
     }
     mb_controls->kp_1 = temp[0];
     mb_controls->ki_1 = temp[1];
     mb_controls->kd_1 = temp[2];
     mb_controls->F1 = temp[3];
-    mb_controls->gyro_offset = temp[4];
-    mb_controls->kp_2 = temp[5];
-    mb_controls->ki_2 = temp[6];
-    mb_controls->kd_2 = temp[7];
-    mb_controls->F2 = temp[8];
+    //mb_controls->gyro_offset = temp[4];
+    //mb_controls->left_motor_offset = temp[5];
+    mb_controls->kp_2 = temp[6];
+    mb_controls->ki_2 = temp[7];
+    mb_controls->kd_2 = temp[8];
+    mb_controls->F2 = temp[9];
     fclose(fp);
 	}
     return 0;
@@ -120,6 +121,9 @@ int mb_controller_update(mb_controls_t* mb_controls, mb_state_t* mb_state, mb_se
     {
         mb_state->d1_u += rc_filter_march(&mb_controls->Di,theta_error);
     }
+
+     mb_state->d2_u_L = mb_state->d1_u + rc_filter_march(&mb_controls->D2,mb_state->phi_L);
+     mb_state->d2_u_R = mb_state->d1_u + rc_filter_march(&mb_controls->D2,mb_state->phi_R);
     return 0;
 }
 

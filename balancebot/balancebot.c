@@ -115,7 +115,8 @@ int main(int argc, char *argv[]){
 		return -1;
 	}
 
-	//rc_nanosleep(5E9); // wait for imu to stabilize
+	rc_nanosleep(5E9); // wait for imu to stabilize
+	mb_setpoints.theta = mpu_data.dmp_TaitBryan[TB_PITCH_X];
 
 	//initialize state mutex
     pthread_mutex_init(&state_mutex, NULL);
@@ -125,7 +126,7 @@ int main(int argc, char *argv[]){
 	//attach controller function to IMU interrupt
 	printf("initializing controller...\n");
 	mb_controller_init(&mb_controls,&mb_setpoints);
-
+	printf("kd2 = %f",mb_controls.kd_2);
 	printf("initializing motors...\n");
 	mb_motor_init();
 
@@ -166,7 +167,7 @@ int main(int argc, char *argv[]){
 	fp = fopen(CFG_PATH,"w");
 	if (fp != NULL)
 	{ 
-		fprintf(fp,"%f %f %f %f %f\n",mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.F1,mb_controls.gyro_offset);
+		fprintf(fp,"%f %f %f %f %f %f\n",mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.F1,mb_controls.gyro_offset,mb_controls.left_motor_offset);
 		fprintf(fp,"%f %f %f %f\n",mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.F2);
 		fprintf(fp,"1.0 0.0 0.0 1\n");
 		fprintf(fp,"1.0 0.0 0.0 1\n");
@@ -205,23 +206,13 @@ void balancebot_controller(){
 	pthread_mutex_lock(&state_mutex);
 	// Read IMU
 
-	static float last_theta=0,last_theta_2,last_theta_3,last_phi;
-	mb_state.theta = (mpu_data.dmp_TaitBryan[TB_PITCH_X] + last_theta)/2;
+	mb_state.theta = mpu_data.dmp_TaitBryan[TB_PITCH_X] ;
 
 
 	// Read encoders and update odometry
 	mb_odometry_update(&mb_odometry, &mb_state);
-
-	mb_state.phi = (float)(mb_state.right_encoder + mb_state.left_encoder)*3.14/(ENCODER_RES*GEAR_RATIO);
-
-
-	mb_state.theta_dot = (mb_state.theta - last_theta_3) * SAMPLE_RATE_HZ/3;
-	mb_state.phi_dot = (mb_state.phi - last_phi) * SAMPLE_RATE_HZ;
-
-	last_theta = mb_state.theta;
-	last_theta_2 = last_theta;
-	last_theta_3 = last_theta_2;
-	last_phi = mb_state.phi;
+	mb_state.phi_L = (float)(mb_state.left_encoder)*2*3.14/(ENCODER_RES*GEAR_RATIO);
+	mb_state.phi_R = (float)(mb_state.right_encoder)*2*3.14/(ENCODER_RES*GEAR_RATIO);
 
 
   // Calculate controller outputs
@@ -230,13 +221,13 @@ void balancebot_controller(){
   if(!mb_setpoints.manual_ctl){
 	  if(mb_state.d1_u > 0)
 	  {
-		mb_motor_set(RIGHT_MOTOR, maximum(-mb_state.d1_u,-0.999));
-		mb_motor_set(LEFT_MOTOR, maximum(-mb_state.d1_u,-0.999));
+		mb_motor_set(RIGHT_MOTOR, maximum(-mb_state.d2_u_R,-0.999));
+		mb_motor_set(LEFT_MOTOR, maximum(-mb_state.d2_u_L,-0.999));
 	  }
 	  else
 	  {
-		mb_motor_set(RIGHT_MOTOR, minimum(-mb_state.d1_u,0.999));
-		mb_motor_set(LEFT_MOTOR, minimum(-mb_state.d1_u,0.999));
+		mb_motor_set(RIGHT_MOTOR, minimum(-mb_state.d2_u_R,0.999));
+		mb_motor_set(LEFT_MOTOR, minimum(-mb_state.d2_u_L,0.999));
 	  }
 		
   }
@@ -352,11 +343,12 @@ void* printf_loop(void* ptr){
 		last_state = new_state;
 		
 		// if(new_state == RUNNING){
-		// 	printf("\r");
+		 	printf("\r");
 		// 	//Add Print stattements here, do not follow with /n
 		// 	pthread_mutex_lock(&state_mutex);
-		// 	printf("theta = %7.3f  |", mb_state.theta);
-		// 	printf("phi = %7.3f  |\n", mb_state.phi);
+		 	printf("theta = %7.3f  |", mb_state.theta);
+		 	printf("phi_L = %7.3f  |", mb_state.phi_L);
+			 printf("phi_R = %7.3f  |\n", mb_state.phi_R);
 		// 	// printf("%7.3f  |", mb_state.theta_dot);
 		// 	// printf("%7.3f  |", mb_state.phi_dot);
 		// 	//printf("%7d  |", mb_state.left_encoder);
@@ -370,7 +362,7 @@ void* printf_loop(void* ptr){
 		// 	pthread_mutex_unlock(&state_mutex);
 		// 	fflush(stdout);
 		// }
-		// rc_nanosleep(4E9/PRINTF_HZ);
+		 rc_nanosleep(4E9/PRINTF_HZ);
 	}
 	return NULL;
 }
