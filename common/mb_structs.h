@@ -17,6 +17,7 @@ struct mb_state{
     double d1_u;
     double d2_u;
     //outputs
+    float   u;          // Output calculated 
     float   left_cmd;  //left wheel command [-1..1]
     float   right_cmd; //right wheel command [-1..1]
 

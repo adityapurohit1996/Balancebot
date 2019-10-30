@@ -63,4 +63,3 @@ runonboot:
 	@$(MAKE) install --no-print-directory
 	@$(LINK) $(DESTDIR)$(prefix)/bin/$(TARGET) $(LINKDIR)/$(LINKNAME)
 	@echo "$(TARGET) Set to Run on Boot"
-

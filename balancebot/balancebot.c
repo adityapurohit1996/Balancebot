@@ -20,15 +20,19 @@
 #include <rc/encoder_eqep.h>
 #include <rc/time.h>
 #include <ncurses.h>
-
+#include <unistd.h>
 
 #include "balancebot.h"
+
+#define CONTROLLER_SWITCH_ANGLE 15*3.14/180
+#define max(a,b) (((a)>(b)) ? (a):(b))
+#define min(a,b) (((a)<(b)) ? (a):(b))
 
 /*******************************************************************************
 * int main()
 *
 *******************************************************************************/
-int main(){
+int main(int argc, char *argv[]){
 	// make sure another instance isn't running
     // if return value is -3 then a background process is running with
     // higher privaledges and we couldn't kill it, in which case we should
@@ -47,7 +51,16 @@ int main(){
         return -1;
     }
 
-	// initialize enocdersint
+	int c;
+	if(!strcmp("dsm", argv[1])) {
+		mb_setpoints.manual_ctl = 0;
+	} 
+	else {
+		mb_setpoints.manual_ctl = 1;
+		}
+	
+
+	// initialize enocders
     if(rc_encoder_eqep_init()==-1){
         fprintf(stderr,"ERROR: failed to initialize eqep encoders\n");
         return -1;
@@ -125,6 +138,10 @@ int main(){
 	printf("initializing motors...\n");
 	mb_motor_init();
 
+	printf("getting gains");
+	mb_get_gains(&mb_gains);
+	printf("%lf\t%lf\t%lf\t%lf\n",mb_gains.K1,mb_gains.K2,mb_gains.K3,mb_gains.K4);
+
 	printf("resetting encoders...\n");
 	rc_encoder_eqep_write(1, 0);
 	rc_encoder_eqep_write(2, 0);
@@ -139,6 +156,13 @@ int main(){
 	printf("we are running!!!...\n");
 	// done initializing so set state to RUNNING
 	rc_set_state(RUNNING);
+
+	printf("starting gain thread... \n");
+	// pthread_t  gain_thread;
+	// initscr();
+    // cbreak();
+	// nodelay(stdscr, TRUE);
+	// rc_pthread_create(&gain_thread, set_gains, (void*) NULL, SCHED_OTHER, 0);
 
 	// Keep looping until state changes to EXITING
 	while(rc_get_state()!=EXITING){
@@ -183,23 +207,25 @@ int main(){
 *
 *
 *******************************************************************************/
+
+
+
 void balancebot_controller(){
 
 
 	//lock state mutex
 	pthread_mutex_lock(&gains_mutex);
 	pthread_mutex_lock(&state_mutex);
+	pthread_mutex_lock(&gains_mutex);
 	// Read IMU
 
 	static float last_theta=0,last_theta_2,last_theta_3,last_phi;
 	mb_state.theta = (mpu_data.dmp_TaitBryan[TB_PITCH_X] + last_theta)/2;
 
-
 	// Read encoders and update odometry
 	mb_odometry_update(&mb_odometry, &mb_state);
 
 	mb_state.phi = (float)(mb_state.right_encoder + mb_state.left_encoder)*3.14/(ENCODER_RES*GEAR_RATIO);
-
 
 	mb_state.theta_dot = (mb_state.theta - last_theta_3) * SAMPLE_RATE_HZ/3;
 	mb_state.phi_dot = (mb_state.phi - last_phi) * SAMPLE_RATE_HZ;
@@ -209,6 +235,43 @@ void balancebot_controller(){
 	last_theta_3 = last_theta_2;
 	last_phi = mb_state.phi;
 
+	// Calculate controller outputs
+	if((mb_state.theta>-CONTROLLER_SWITCH_ANGLE) || (mb_state.theta<CONTROLLER_SWITCH_ANGLE))
+	{
+	mb_state.u = mb_gains.K1*mb_state.theta + mb_gains.K2*mb_state.theta_dot - mb_gains.K3*mb_state.phi - mb_gains.K4*mb_state.phi_dot + mb_gains.Nbar*0.001;
+	}
+	else
+	{
+	mb_state.u = mb_gains.K1*1.2*mb_state.theta + mb_gains.K2*mb_state.theta_dot - mb_gains.K3*mb_state.phi - mb_gains.K4*mb_state.phi_dot + mb_gains.Nbar*0.001;
+
+	}
+
+	if(mb_state.u < -1)
+	{
+		mb_state.u = -0.999;
+	}
+	else if(mb_state.u > 1)
+	{
+		mb_state.u =0.999;
+	}
+
+	// if(mb_state.u < -0.1)
+	// {
+	// 	mb_motor_set(RIGHT_MOTOR,mb_state.u);
+	// 	mb_motor_set(LEFT_MOTOR,min((mb_state.u *(float)(mb_gains.temp1)),-0.999));
+
+	// }
+	// else if (mb_state.u > 0.1)
+	// {
+	// 	mb_motor_set(RIGHT_MOTOR,mb_state.u);
+	// 	mb_motor_set(LEFT_MOTOR,max((mb_state.u *(float)(mb_gains.temp1)),0.999));
+	// }
+	// else
+	// {
+		// mb_motor_set(RIGHT_MOTOR,mb_state.u);
+		// mb_motor_set(LEFT_MOTOR,mb_state.u);
+
+	// }
 
   // Calculate controller outputs
 	mb_controller_update(&mb_controls,&mb_state,&mb_setpoints);
@@ -245,11 +308,10 @@ void balancebot_controller(){
    	//unlock state mutex
 	pthread_mutex_unlock(&gains_mutex);
     pthread_mutex_unlock(&state_mutex);
+	pthread_mutex_unlock(&gains_mutex);
 
 }
-/*******************************************************************************
-* get_gains()
-*/
+
 
 
 /*******************************************************************************
@@ -260,6 +322,18 @@ void balancebot_controller(){
 *
 *******************************************************************************/
 void* setpoint_control_loop(void* ptr){
+	    double drive_stick, turn_stick, input_mode; // input sticks
+        // int i, ch, chan, stdin_timeout = 0; // for stdin input
+        // char in_str[11];
+
+		// while(rc_get_state()!=EXITING){
+		// // clear out input of old data before waiting for new data
+		// if(m_setpoints.man == STDIN) fseek(stdin,0,SEEK_END);
+		// // sleep at beginning of loop so we can use the 'continue' statement
+		// rc_usleep(1000000/SETPOINT_MANAGER_HZ);
+		// // nothing to do if paused, go back to beginning of loop
+		// if(rc_get_state() != RUNNING || m_input_mode == NONE) continue;
+		// }
 
 	while(1){
 
@@ -267,7 +341,18 @@ void* setpoint_control_loop(void* ptr){
 				// TODO: Handle the DSM data from the Spektrum radio reciever
 				// You may should implement switching between manual and autonomous mode
 				// using channel 5 of the DSM data.
+			turn_stick  = rc_dsm_ch_normalized(DSM_TURN_CH) * DSM_TURN_POL;
+			drive_stick = rc_dsm_ch_normalized(DSM_DRIVE_CH)* DSM_DRIVE_POL;
+			input_mode = rc_dsm_ch_normalized(DSM_CHOOSE_MODE)* DSM_DRIVE_POL;
+
+			printf("%f",turn_stick);
+			printf("/n");
+			printf("%f",input_mode);
+			printf("\n");
+			printf("%f",drive_stick);
+		
 		}
+
 	 	rc_nanosleep(1E9 / RC_CTL_HZ);
 	}
 	return NULL;
@@ -294,10 +379,11 @@ void* printf_loop(void* ptr){
 			printf("\nRUNNING: Hold upright to balance.\n");
 			printf("                 SENSORS               |            MOCAP            |");
 			printf("\n");
-			// printf("    θ    |");
-			// printf("    φ    |");
-			// printf("theta_dot |");
-			// printf("phi_dot   |");
+			printf("    θ    |");
+			printf("    φ    |");
+			printf("theta_dot |");
+			printf("phi_dot   |");
+			printf("u         |");
 			printf("  L Enc  |");
 			printf("  R Enc  |");
 			printf("    X    |");

@@ -117,6 +117,10 @@ int mb_motor_set(int motor, double duty){
     // printf("Function Check!!!!!!\n");
     // rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM1_PIN,0.5);
     // rc_pwm_set_duty(PWM_SUBSYSTEM,MPWM2_PIN,0.5);
+    if (duty < -1.0)
+        duty = -0.99;
+    else if (duty > 1.0)
+        duty = 0.99;
 
     switch(motor)
     {

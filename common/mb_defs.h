@@ -56,4 +56,13 @@
 #define D2_DEN_LEN		3
 #define THETA_REF_MAX		0.33
 
+// DSM channel config
+#define SETPOINT_MANAGER_HZ	        100
+#define DSM_DRIVE_POL		        1
+#define DSM_TURN_POL		        1
+#define DSM_DRIVE_CH		        3
+#define DSM_TURN_CH		            2
+#define DSM_CHOOSE_MODE             5		            
+#define DSM_DEAD_ZONE		        0.04
+
 #endif
