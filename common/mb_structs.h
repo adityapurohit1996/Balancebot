@@ -16,8 +16,7 @@ struct mb_state{
     int     right_encoder;     // right encoder counts since last reading
 
     double d1_u;
-    double d2_u_L;
-    double d2_u_R;
+    double d2_u;
     //outputs
     float   u;          // Output calculated 
     float   left_cmd;  //left wheel command [-1..1]

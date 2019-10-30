@@ -116,7 +116,6 @@ int main(int argc, char *argv[]){
 	}
 
 	rc_nanosleep(5E9); // wait for imu to stabilize
-	mb_setpoints.theta = mpu_data.dmp_TaitBryan[TB_PITCH_X];
 
 	//initialize state mutex
     pthread_mutex_init(&state_mutex, NULL);
@@ -126,7 +125,6 @@ int main(int argc, char *argv[]){
 	//attach controller function to IMU interrupt
 	printf("initializing controller...\n");
 	mb_controller_init(&mb_controls,&mb_setpoints);
-	printf("kd2 = %f",mb_controls.kd_2);
 	printf("initializing motors...\n");
 	mb_motor_init();
 
@@ -163,16 +161,16 @@ int main(int argc, char *argv[]){
 	}
 
 	//save current gains
-	FILE* fp;
-	fp = fopen(CFG_PATH,"w");
-	if (fp != NULL)
-	{ 
-		fprintf(fp,"%f %f %f %f %f %f\n",mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.F1,mb_controls.gyro_offset,mb_controls.left_motor_offset);
-		fprintf(fp,"%f %f %f %f\n",mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.F2);
-		fprintf(fp,"1.0 0.0 0.0 1\n");
-		fprintf(fp,"1.0 0.0 0.0 1\n");
-	}
-	fclose(fp);
+	// FILE* fp;
+	// fp = fopen(CFG_PATH,"w");
+	// if (fp != NULL)
+	// { 
+	// 	fprintf(fp,"%f %f %f %f %f %f\n",mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.F1,mb_controls.gyro_offset,mb_controls.left_motor_offset);
+	// 	fprintf(fp,"%f %f %f %f\n",mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.F2);
+	// 	fprintf(fp,"1.0 0.0 0.0 1\n");
+	// 	fprintf(fp,"1.0 0.0 0.0 1\n");
+	// }
+	// fclose(fp);
 
 	// exit cleanly
 	endwin();
@@ -217,17 +215,17 @@ void balancebot_controller(){
 
   // Calculate controller outputs
 	mb_controller_update(&mb_controls,&mb_state,&mb_setpoints);
-	
+
   if(!mb_setpoints.manual_ctl){
 	  if(mb_state.d1_u > 0)
 	  {
-		mb_motor_set(RIGHT_MOTOR, maximum(-mb_state.d2_u_R,-0.999));
-		mb_motor_set(LEFT_MOTOR, maximum(-mb_state.d2_u_L,-0.999));
+		mb_motor_set(RIGHT_MOTOR, maximum(-mb_state.u,-0.999));
+		mb_motor_set(LEFT_MOTOR, maximum(-mb_state.u,-0.999));
 	  }
 	  else
 	  {
-		mb_motor_set(RIGHT_MOTOR, minimum(-mb_state.d2_u_R,0.999));
-		mb_motor_set(LEFT_MOTOR, minimum(-mb_state.d2_u_L,0.999));
+		mb_motor_set(RIGHT_MOTOR, minimum(-mb_state.u,0.999));
+		mb_motor_set(LEFT_MOTOR, minimum(-mb_state.u,0.999));
 	  }
 		
   }
