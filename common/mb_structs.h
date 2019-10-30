@@ -8,8 +8,7 @@ struct mb_state{
     // raw sensor inputs
     float   theta;             // body angle (rad)
     float   gyro_yaw;
-    float   phi_L;               // Left wheel angle (rad)
-    float   phi_R;              //Right wheel angle (rad)
+    float   phi;            //Average wheel angle (rad)
     float theta_dot;
     float phi_dot;
     int     left_encoder;      // left encoder counts since last reading

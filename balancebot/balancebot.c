@@ -209,23 +209,21 @@ void balancebot_controller(){
 
 	// Read encoders and update odometry
 	mb_odometry_update(&mb_odometry, &mb_state);
-	mb_state.phi_L = (float)(mb_state.left_encoder)*2*3.14/(ENCODER_RES*GEAR_RATIO);
-	mb_state.phi_R = (float)(mb_state.right_encoder)*2*3.14/(ENCODER_RES*GEAR_RATIO);
-
+	mb_state.phi = (float)(mb_state.left_encoder + mb_state.left_encoder)*3.14/(ENCODER_RES*GEAR_RATIO) + mb_state.theta;
 
   // Calculate controller outputs
 	mb_controller_update(&mb_controls,&mb_state,&mb_setpoints);
 
   if(!mb_setpoints.manual_ctl){
-	  if(mb_state.d1_u > 0)
+	  if(mb_state.d1_u < 0)
 	  {
-		mb_motor_set(RIGHT_MOTOR, maximum(-mb_state.u,-0.999));
-		mb_motor_set(LEFT_MOTOR, maximum(-mb_state.u,-0.999));
+		mb_motor_set(RIGHT_MOTOR, maximum(mb_state.u,-0.999));
+		mb_motor_set(LEFT_MOTOR, maximum(mb_state.u,-0.999));
 	  }
 	  else
 	  {
-		mb_motor_set(RIGHT_MOTOR, minimum(-mb_state.u,0.999));
-		mb_motor_set(LEFT_MOTOR, minimum(-mb_state.u,0.999));
+		mb_motor_set(RIGHT_MOTOR, minimum(mb_state.u,0.999));
+		mb_motor_set(LEFT_MOTOR, minimum(mb_state.u,0.999));
 	  }
 		
   }
@@ -287,7 +285,7 @@ void* setpoint_control_loop(void* ptr){
 			drive_stick = rc_dsm_ch_normalized(DSM_DRIVE_CH)* DSM_DRIVE_POL;
 			input_mode = rc_dsm_ch_normalized(DSM_CHOOSE_MODE)* DSM_DRIVE_POL;
 
-			printf("%f %f %f\n",turn_stick, drive_stick, input_mode);
+			//printf("%f %f %f\n",turn_stick, drive_stick, input_mode);
 			if (input_mode) 
 				mb_setpoints.manual_ctl = 1;
 			else
@@ -295,7 +293,7 @@ void* setpoint_control_loop(void* ptr){
 		
 		}
 
-	 	rc_nanosleep(1E9 / 5);//RC_CTL_HZ
+	 	rc_nanosleep(1E9 / RC_CTL_HZ);//RC_CTL_HZ
 	} 
 	return NULL;
 }
@@ -340,13 +338,12 @@ void* printf_loop(void* ptr){
 		
 		last_state = new_state;
 		
-		// if(new_state == RUNNING){
+		if(new_state == RUNNING){
 		 	printf("\r");
 		// 	//Add Print stattements here, do not follow with /n
-		// 	pthread_mutex_lock(&state_mutex);
+			pthread_mutex_lock(&state_mutex);
 		 	printf("theta = %7.3f  |", mb_state.theta);
-		 	printf("phi_L = %7.3f  |", mb_state.phi_L);
-			 printf("phi_R = %7.3f  |\n", mb_state.phi_R);
+		 	printf("phi = %7.3f  |", mb_state.phi);
 		// 	// printf("%7.3f  |", mb_state.theta_dot);
 		// 	// printf("%7.3f  |", mb_state.phi_dot);
 		// 	//printf("%7d  |", mb_state.left_encoder);
@@ -357,9 +354,9 @@ void* printf_loop(void* ptr){
 		// 	//printf("%7.3f  |", mb_odometry.x);
 		// 	//printf("%7.3f  |", mb_odometry.y);
 		// 	//printf("%7.3f  |", mb_odometry.psi);
-		// 	pthread_mutex_unlock(&state_mutex);
-		// 	fflush(stdout);
-		// }
+			pthread_mutex_unlock(&state_mutex);
+			fflush(stdout);
+		}
 		 rc_nanosleep(4E9/PRINTF_HZ);
 	}
 	return NULL;

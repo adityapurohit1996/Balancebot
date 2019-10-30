@@ -35,7 +35,7 @@ int mb_controller_init(mb_controls_t* mb_controls, mb_setpoints_t* mb_setpoints)
     */
 	rc_filter_pid(&mb_controls->D1, mb_controls->kp_1, 0, mb_controls->kd_1, 1/mb_controls->F1, DT);
     rc_filter_pid(&mb_controls->Di, 0, mb_controls->ki_1, 0, 1/mb_controls->F1, DT);
-	rc_filter_pid(&mb_controls->D2, mb_controls->kp_2, mb_controls->ki_2, mb_controls->kd_2, DT*4, DT);
+	rc_filter_pid(&mb_controls->D2, mb_controls->kp_2, mb_controls->ki_2, mb_controls->kd_2, 1/mb_controls->F2, DT);
 
 
     rc_filter_enable_saturation(&mb_controls->D1, -1.0, 1.0);
@@ -75,9 +75,9 @@ int mb_controller_load_config(mb_controls_t* mb_controls){
     {
         fscanf(fp,"%f",&temp[i]);	
     }
-    mb_controls->kp_1 = temp[0];
-    mb_controls->ki_1 = temp[1];
-    mb_controls->kd_1 = temp[2];
+    mb_controls->kp_1 = -temp[0];
+    mb_controls->ki_1 = -temp[1];
+    mb_controls->kd_1 = -temp[2];
     mb_controls->F1 = temp[3];
     mb_controls->gyro_offset = temp[4];
     mb_controls->left_motor_offset = temp[5];
@@ -106,14 +106,12 @@ int mb_controller_load_config(mb_controls_t* mb_controls){
 int mb_controller_update(mb_controls_t* mb_controls, mb_state_t* mb_state, mb_setpoints_t* mb_setpoints){
     /*TODO: Write your controller here*/
 
-    /*
-    if(fwd_velocity == 0){
+    
+ 
         //if(fabs(mb_state.phi_dot) > 0.001) setpoint.phi += setpoint.phi_dot*DT;
-        mb_state->d2_u = rc_filter_march(&D2,0-mb_state->phi);
-        mb_setpoints->theta = mb_state->d2_u;
-    }
-    else mb_setpoints->theta = 0.0;
-    */
+    mb_state->d2_u = rc_filter_march(&mb_controls->D2,0-mb_state->phi);
+    mb_setpoints->theta = mb_state->d2_u + mb_controls->gyro_offset;
+
     static float theta_error;
     theta_error =  mb_setpoints->theta-mb_state->theta;
     mb_state->d1_u = rc_filter_march(&mb_controls->D1,theta_error);
