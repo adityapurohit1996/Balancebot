@@ -3,7 +3,8 @@
 
 
 #include "mb_structs.h"
-#define CFG_PATH "pid.cfg"
+#define CFG_PATH                    "pid.cfg"
+#define M_PI                        3.14159265358979323846
 
 int mb_controller_init();
 int mb_controller_load_config();
@@ -11,5 +12,6 @@ int mb_controller_update(mb_controls_t* mb_controls, mb_state_t* mb_state, mb_se
 int mb_controller_cleanup();
 float maximum(float a, float b);
 float minimum(float a, float b);
+float gamma_diff(float set_gamma, float gamma);
 #endif
 

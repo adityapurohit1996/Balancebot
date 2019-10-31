@@ -210,7 +210,8 @@ void balancebot_controller(){
 	// Read encoders and update odometry
 	mb_odometry_update(&mb_odometry, &mb_state);
 	mb_state.phi = (float)(mb_state.left_encoder + mb_state.right_encoder)*3.14/(ENCODER_RES*GEAR_RATIO) + mb_state.theta;
-	mb_state.gamma = (float)(mb_state.right_encoder - mb_state.left_encoder)*WHEEL_DIAMETER*3.14/(WHEEL_BASE*ENCODER_RES*GEAR_RATIO);
+	//mb_state.gamma = (float)(mb_state.right_encoder - mb_state.left_encoder)*WHEEL_DIAMETER*3.14/(WHEEL_BASE*ENCODER_RES*GEAR_RATIO);
+	mb_state.gamma = mb_odometry.psi;
   // Calculate controller outputs
 	mb_controller_update(&mb_controls,&mb_state,&mb_setpoints);
 
@@ -229,9 +230,16 @@ void balancebot_controller(){
   }
 
   if(mb_setpoints.manual_ctl){
-	  mb_motor_set(RIGHT_MOTOR, 0);
-	  mb_motor_set(LEFT_MOTOR, 0);
-    //send motor commands
+	  if(mb_state.d1_u < 0)
+	  {
+		mb_motor_set(RIGHT_MOTOR, maximum(mb_state.right_cmd,-0.999));
+		mb_motor_set(LEFT_MOTOR, maximum(mb_state.left_cmd,-0.999));
+	  }
+	  else
+	  {
+		mb_motor_set(RIGHT_MOTOR, minimum(mb_state.right_cmd,0.999));
+		mb_motor_set(LEFT_MOTOR, minimum(mb_state.left_cmd,0.999));
+	  }
   }
 	/*
 	XBEE_getData();
@@ -290,6 +298,12 @@ void* setpoint_control_loop(void* ptr){
 				mb_setpoints.manual_ctl = 1;
 			else
 				mb_setpoints.manual_ctl = 0;
+
+			if (mb_setpoints.manual_ctl) {
+				mb_setpoints.phi += MAX_FORWARD_VEL*drive_stick/RC_CTL_HZ/(WHEEL_DIAMETER/2);
+				mb_setpoints.gamma += MAX_TURN_VEL*turn_stick/RC_CTL_HZ;
+				mb_setpoints.gamma = mb_clamp_radians(mb_setpoints.gamma);
+			}
 		
 		}
 
@@ -344,6 +358,11 @@ void* printf_loop(void* ptr){
 			pthread_mutex_lock(&state_mutex);
 		 	printf("theta = %7.3f  |", mb_state.theta);
 		 	printf("phi = %7.3f  |", mb_state.phi);
+			 printf("gamma = %7.3f  |", mb_state.gamma);
+			printf("setpoint_phi = %7.3f  |", mb_setpoints.phi);
+			printf("setpoint_gamma = %7.3f  |", mb_setpoints.gamma);
+			printf("left cmd = %7.3f  |", mb_state.left_cmd);
+			printf("right cmd = %7.3f  |", mb_state.right_cmd);
 		// 	// printf("%7.3f  |", mb_state.theta_dot);
 		// 	// printf("%7.3f  |", mb_state.phi_dot);
 		// 	//printf("%7d  |", mb_state.left_encoder);

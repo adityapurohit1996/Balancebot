@@ -61,7 +61,7 @@ int mb_controller_init(mb_controls_t* mb_controls, mb_setpoints_t* mb_setpoints)
 *
 * this provides a basic configuration load routine
 * you can use this as is or modify it if you want a different format
-*
+*#define M_PI                        3.14159265358979323846
 * return 0 on success
 *
 *******************************************************************************/
@@ -131,7 +131,9 @@ int mb_controller_update(mb_controls_t* mb_controls, mb_state_t* mb_state, mb_se
 
      mb_state->u = mb_state->d1_u;
 
-    mb_state->d3_u = rc_filter_march(&mb_controls->D3,mb_setpoints->gamma - mb_state->gamma);
+    //consider the roundoffs when calculateing the gamma difference
+    float gamma_d = gamma_diff(mb_setpoints->gamma, mb_state->gamma);
+    mb_state->d3_u = rc_filter_march(&mb_controls->D3,gamma_d);
     mb_state->left_cmd = mb_state->u - mb_state->d3_u;
     mb_state->right_cmd = mb_state->u + mb_state->d3_u;
 
@@ -164,4 +166,19 @@ float maximum (float a, float b)
 float minimum (float a, float b)
 {
     return a < b ? a : b;
+}
+
+float gamma_diff(float set_gamma, float gamma) 
+{
+    if ((set_gamma<0) && (gamma>0)) 
+    {
+        if (fabs(set_gamma+2*M_PI-gamma) < fabs(set_gamma-gamma))
+            return (set_gamma+2*M_PI-gamma);
+    }
+    if ((gamma<0) && (set_gamma>0)) 
+    {
+        if (fabs(set_gamma-gamma-2*M_PI) < fabs(set_gamma-gamma))
+            return (set_gamma-gamma-2*M_PI);
+    }
+    return (set_gamma-gamma);
 }
