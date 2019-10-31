@@ -9,15 +9,15 @@ struct mb_state{
     float   theta;             // body angle (rad)
     float   gyro_yaw;
     float   phi;            //Average wheel angle (rad)
-    float theta_dot;
-    float phi_dot;
+    float   gamma;          // Orientation 
     int     left_encoder;      // left encoder counts since last reading
     int     right_encoder;     // right encoder counts since last reading
 
     double d1_u;
     double d2_u;
+    double d3_u;
     //outputs
-    float   u;          // Output calculated 
+    float   u;          // Output calculated
     float   left_cmd;  //left wheel command [-1..1]
     float   right_cmd; //right wheel command [-1..1]
 
@@ -34,6 +34,8 @@ typedef struct mb_setpoints mb_setpoints_t;
 struct mb_setpoints{
 
     float theta;
+    float phi;
+    float gamma;
     float fwd_velocity; // fwd velocity in m/s
     float turn_velocity; // turn velocity in rad/s
     int  manual_ctl;
@@ -45,6 +47,7 @@ struct mb_controls{
     rc_filter_t D1;
     rc_filter_t Di;
     rc_filter_t D2;
+    rc_filter_t D3;
 
     float kp_1;
     float ki_1;
@@ -56,6 +59,10 @@ struct mb_controls{
     float ki_2;
     float kd_2 ;
     float F2 ;
+    float kp_3 ;
+    float ki_3;
+    float kd_3 ;
+    float F3 ;
 
     float incre;
 

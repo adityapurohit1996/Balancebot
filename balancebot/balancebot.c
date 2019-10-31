@@ -209,21 +209,21 @@ void balancebot_controller(){
 
 	// Read encoders and update odometry
 	mb_odometry_update(&mb_odometry, &mb_state);
-	mb_state.phi = (float)(mb_state.left_encoder + mb_state.left_encoder)*3.14/(ENCODER_RES*GEAR_RATIO) + mb_state.theta;
-
+	mb_state.phi = (float)(mb_state.left_encoder + mb_state.right_encoder)*3.14/(ENCODER_RES*GEAR_RATIO) + mb_state.theta;
+	mb_state.gamma = (float)(mb_state.right_encoder - mb_state.left_encoder)*WHEEL_DIAMETER*3.14/(WHEEL_BASE*ENCODER_RES*GEAR_RATIO);
   // Calculate controller outputs
 	mb_controller_update(&mb_controls,&mb_state,&mb_setpoints);
 
   if(!mb_setpoints.manual_ctl){
 	  if(mb_state.d1_u < 0)
 	  {
-		mb_motor_set(RIGHT_MOTOR, maximum(mb_state.u,-0.999));
-		mb_motor_set(LEFT_MOTOR, maximum(mb_state.u,-0.999));
+		mb_motor_set(RIGHT_MOTOR, maximum(mb_state.right_cmd,-0.999));
+		mb_motor_set(LEFT_MOTOR, maximum(mb_state.left_cmd,-0.999));
 	  }
 	  else
 	  {
-		mb_motor_set(RIGHT_MOTOR, minimum(mb_state.u,0.999));
-		mb_motor_set(LEFT_MOTOR, minimum(mb_state.u,0.999));
+		mb_motor_set(RIGHT_MOTOR, minimum(mb_state.right_cmd,0.999));
+		mb_motor_set(LEFT_MOTOR, minimum(mb_state.left_cmd,0.999));
 	  }
 		
   }
