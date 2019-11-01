@@ -76,6 +76,8 @@ int main(int argc, char *argv[]){
 		return -1;
 	};
 
+	t_pre = rc_nanos_since_epoch();
+
     // make PID file to indicate your project is running
 	// due to the check made on the call to rc_kill_existing_process() above
 	// we can be fairly confident there is no PID file already and we can
@@ -230,16 +232,16 @@ void balancebot_controller(){
   }
 
   if(mb_setpoints.manual_ctl){
-	  if(mb_state.d1_u < 0)
-	  {
-		mb_motor_set(RIGHT_MOTOR, maximum(mb_state.right_cmd,-0.999));
-		mb_motor_set(LEFT_MOTOR, maximum(mb_state.left_cmd,-0.999));
-	  }
-	  else
-	  {
-		mb_motor_set(RIGHT_MOTOR, minimum(mb_state.right_cmd,0.999));
-		mb_motor_set(LEFT_MOTOR, minimum(mb_state.left_cmd,0.999));
-	  }
+	//   if(mb_state.d1_u < 0)
+	//   {
+	// 	mb_motor_set(RIGHT_MOTOR, maximum(mb_state.right_cmd,-0.999));
+	// 	mb_motor_set(LEFT_MOTOR, maximum(mb_state.left_cmd,-0.999));
+	//   }
+	//   else
+	//   {
+	// 	mb_motor_set(RIGHT_MOTOR, minimum(mb_state.right_cmd,0.999));
+	// 	mb_motor_set(LEFT_MOTOR, minimum(mb_state.left_cmd,0.999));
+	//   }
   }
 	/*
 	XBEE_getData();
@@ -281,7 +283,7 @@ void* setpoint_control_loop(void* ptr){
 		// rc_usleep(1000000/SETPOINT_MANAGER_HZ);
 		// // nothing to do if paused, go back to beginning of loop
 		// if(rc_get_state() != RUNNING || m_input_mode == NONE) continue;
-		// }
+		// }#include <rc/time.h>
 
 	while(1){
 
@@ -325,7 +327,7 @@ void* setpoint_control_loop(void* ptr){
 *******************************************************************************/
 void* printf_loop(void* ptr){
 	rc_state_t last_state, new_state; // keep track of last state
-	while(rc_get_state()!=EXITING){
+	while(rc_get_state()!=EXITING){float
 		new_state = rc_get_state();
 		// check if this is the first time since being paused
 		// if(new_state==RUNNING){
@@ -356,13 +358,22 @@ void* printf_loop(void* ptr){
 		 	printf("\r");
 		// 	//Add Print stattements here, do not follow with /n
 			pthread_mutex_lock(&state_mutex);
-		 	printf("theta = %7.3f  |", mb_state.theta);
-		 	printf("phi = %7.3f  |", mb_state.phi);
-			 printf("gamma = %7.3f  |", mb_state.gamma);
-			printf("setpoint_phi = %7.3f  |", mb_setpoints.phi);
-			printf("setpoint_gamma = %7.3f  |", mb_setpoints.gamma);
-			printf("left cmd = %7.3f  |", mb_state.left_cmd);
-			printf("right cmd = %7.3f  |", mb_state.right_cmd);
+		 	// printf("theta = %7.3f  |", mb_state.theta);
+		 	// printf("phi = %7.3f  |", mb_state.phi);
+			//  printf("gamma = %7.3f  |", mb_state.gamma);
+			// printf("setpoint_phi = %7.3f  |", mb_setpoints.phi);
+			// printf("setpoint_gamma = %7.3f  |", mb_setpoints.gamma);
+			// printf("left cmd = %7.3f  |", mb_state.left_cmd);
+			// printf("right cmd = %7.3f  |", mb_state.right_cmd);
+
+			//print to files
+			uint64_t t_cur = rc_nanos_since_epoch();
+    		float t_diff = (float)((t_cur-t_pre)/1E9);   
+    		FILE* f1;
+    		f1 = fopen("/home/debian/square_data.csv", "a");
+    		fprintf(f1, "%7.3f, %7.3f, %7.3f, %7.3f, %7.3f, %7.3f\n",t_diff, mb_odometry.x, mb_odometry.y, mb_odometry.psi, mb_state.theta, mb_state.phi);
+    		printf("%7.3f, %7.3f, %7.3f, %7.3f, %7.3f, %7.3f\n",t_diff, mb_odometry.x, mb_odometry.y, mb_odometry.psi, mb_state.theta, mb_state.phi);
+    		fclose(f1);
 		// 	// printf("%7.3f  |", mb_state.theta_dot);
 		// 	// printf("%7.3f  |", mb_state.phi_dot);
 		// 	//printf("%7d  |", mb_state.left_encoder);

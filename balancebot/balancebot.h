@@ -42,4 +42,5 @@ void* setpoint_control_loop(void* ptr);
 void* printf_loop(void* ptr);
 void* set_gains(void* ptr);
 
+uint64_t t_pre;
 #endif
