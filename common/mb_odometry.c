@@ -1,7 +1,7 @@
 /*******************************************************************************
 * mb_odometry.c
 *
-* TODO: Implement these functions to add odometry functionality 
+* TODO: Implement these functions to add odometry functionality
 *
 *******************************************************************************/
 #include "math.h"
@@ -45,12 +45,12 @@ void mb_odometry_update(mb_odometry_t* mb_odometry, mb_state_t* mb_state){
     float delta_psi = (delta_s_w_right - delta_s_w_left)/WHEEL_BASE;
     float delta_d = (delta_s_w_right + delta_s_w_left)/2;
 
-    //float delta_x = delta_d*cos(mb_odometry->psi + delta_psi/2);
+    float delta_x = delta_d*cos(mb_odometry->psi + delta_psi/2);
     float delta_y = delta_d*sin(mb_odometry->psi + delta_psi/2);
 
     //update odometry
 
-    mb_odometry->x += delta_s_w_left;
+    mb_odometry->x += delta_x;
     mb_odometry->y += delta_y;
 
     //gyrodometry
