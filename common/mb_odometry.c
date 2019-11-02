@@ -13,7 +13,7 @@
 #define GEAR_RATIO                  20.4 // gear ratio of motor
 #define WHEEL_RADIUS                0.042      //radius of wheel in meters
 #define WHEEL_BASE                  0.208 // wheel separation distance in meters
-#define GYRODOM_THRESH              0.125*M_PI/180
+#define GYRODOM_THRESH              0.3*M_PI/180
 
 
 
@@ -57,8 +57,11 @@ void mb_odometry_update(mb_odometry_t* mb_odometry, mb_state_t* mb_state){
     float cur_gyro_yaw = mpu_data.dmp_TaitBryan[TB_YAW_Z];
     float delta_gyro_yaw = cur_gyro_yaw - mb_odometry->gyro_yaw_last;
     float delta_G_O = delta_gyro_yaw - delta_psi;
-    if (fabs(delta_G_O) > GYRODOM_THRESH)
+    if (fabs(delta_G_O) > GYRODOM_THRESH) {
         mb_odometry->psi += delta_gyro_yaw;
+        printf("using gyro now");
+    }
+        //mb_odometry->psi += delta_psi;
     else
         mb_odometry->psi += delta_psi;
     //clamp odometry
