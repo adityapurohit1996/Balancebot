@@ -63,6 +63,8 @@ struct mb_controls{
     float ki_3;
     float kd_3 ;
     float F3 ;
+    float max_fwd_vel;
+    float max_turn_vel;
 
     float incre;
 

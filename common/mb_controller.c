@@ -68,7 +68,7 @@ int mb_controller_init(mb_controls_t* mb_controls, mb_setpoints_t* mb_setpoints)
 
 
 int mb_controller_load_config(mb_controls_t* mb_controls){
-    float temp[14];
+    float temp[16];
     int i;
     FILE* fp = fopen(CFG_PATH, "r");
     if (fp == NULL){
@@ -76,7 +76,7 @@ int mb_controller_load_config(mb_controls_t* mb_controls){
     }
     else
     {
-    for (i=0;i<14;i++)
+    for (i=0;i<16;i++)
     {
         fscanf(fp,"%f",&temp[i]);	
     }
@@ -94,6 +94,9 @@ int mb_controller_load_config(mb_controls_t* mb_controls){
     mb_controls->ki_3 = temp[11];
     mb_controls->kd_3 = temp[12];
     mb_controls->F3 = temp[13];
+    mb_controls->max_fwd_vel = temp[14];
+    mb_controls->max_turn_vel = temp[15];
+
     fclose(fp);
 	}
     return 0;

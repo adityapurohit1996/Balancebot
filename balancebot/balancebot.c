@@ -174,7 +174,7 @@ int main(int argc, char *argv[]){
 
 	// exit cleanly
 	endwin();
-	rc_mpu_power_off();
+	rc_mpu_power_off(); 
 	mb_motor_cleanup(&mb_controls);
 	rc_led_cleanup();
 	rc_encoder_eqep_cleanup();
@@ -300,8 +300,8 @@ void* setpoint_control_loop(void* ptr){
 				mb_setpoints.manual_ctl = 0;
 
 			if (mb_setpoints.manual_ctl) {
-				mb_setpoints.phi += MAX_FORWARD_VEL*drive_stick/RC_CTL_HZ/(WHEEL_DIAMETER/2);
-				mb_setpoints.gamma += MAX_TURN_VEL*turn_stick/RC_CTL_HZ;
+				mb_setpoints.phi += mb_controls.max_fwd_vel*drive_stick/RC_CTL_HZ/(WHEEL_DIAMETER/2);
+				mb_setpoints.gamma += mb_controls.max_turn_vel*turn_stick/RC_CTL_HZ;
 				mb_setpoints.gamma = mb_clamp_radians(mb_setpoints.gamma);
 			}
 		
