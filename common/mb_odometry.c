@@ -13,7 +13,7 @@
 #define GEAR_RATIO                  20.4 // gear ratio of motor
 #define WHEEL_RADIUS                0.042      //radius of wheel in meters
 #define WHEEL_BASE                  0.208 // wheel separation distance in meters
-#define GYRODOM_THRESH              0.125*M_PI/180
+#define GYRODOM_THRESH              0.3*M_PI/180
 
 
 
