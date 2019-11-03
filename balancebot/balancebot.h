@@ -30,6 +30,12 @@ mb_setpoints_t mb_setpoints;
 mb_odometry_t mb_odometry;
 mb_controls_t mb_controls;
 
+//for trajectory
+mb_odometry_t* mb_traj;
+int tgt_counter ;
+int num_set_pts;
+int counter;
+
 xbee_packet_t xbeeMsg;
 int XBEE_portID;
 

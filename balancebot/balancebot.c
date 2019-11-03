@@ -28,6 +28,8 @@
 #define max(a,b) (((a)>(b)) ? (a):(b))
 #define min(a,b) (((a)<(b)) ? (a):(b))
 
+float tgt_pts[7][3] = {{1, 0, 0}, {0, 0, M_PI/2}, {0, 1, 0}, {0, 0, M_PI/2}, {-1, 0, 0}, {0, 0, M_PI/2}, {0, -1, 0}};
+
 /*******************************************************************************
 * int main()
 *
@@ -76,6 +78,12 @@ int main(int argc, char *argv[]){
 		return -1;
 	};
 
+	//*****************************************************************************for trajectory (delete if not required)
+	tgt_counter = 0;
+	counter = 0;
+	mb_traj = (mb_odometry_t*) malloc(50*sizeof(mb_odometry_t));
+	num_set_pts = traj_planner(tgt_pts[0][0], tgt_pts[0][1], tgt_pts[0][2], mb_traj);
+
     // make PID file to indicate your project is running
 	// due to the check made on the call to rc_kill_existing_process() above
 	// we can be fairly confident there is no PID file already and we can
@@ -95,9 +103,9 @@ int main(int argc, char *argv[]){
 
 	printf("starting gain thread... \n");
 	pthread_t  gain_thread;
-	initscr();
-    cbreak();
-	nodelay(stdscr, TRUE);
+	//initscr();
+    //cbreak();
+	//nodelay(stdscr, TRUE);
 	rc_pthread_create(&gain_thread, set_gains, (void*) NULL, SCHED_OTHER, 0);
 
 	// TODO: start motion capture message recieve thread
@@ -173,7 +181,8 @@ int main(int argc, char *argv[]){
 	// fclose(fp);
 
 	// exit cleanly
-	endwin();
+	//free(mb_traj);
+	//endwin();
 	rc_mpu_power_off(); 
 	mb_motor_cleanup(&mb_controls);
 	rc_led_cleanup();
@@ -270,6 +279,7 @@ void balancebot_controller(){
 *
 *******************************************************************************/
 void* setpoint_control_loop(void* ptr){
+		rc_state_t cur_state;
 	    double drive_stick, turn_stick, input_mode; // input sticks
         // int i, ch, chan, stdin_timeout = 0; // for stdin input
         // char in_str[11];
@@ -284,6 +294,7 @@ void* setpoint_control_loop(void* ptr){
 		// }
 
 	while(1){
+		cur_state = rc_get_state();
 
 		if(rc_dsm_is_new_data()){
 				// TODO: Handle the DSM data from the Spektrum radio reciever
@@ -304,7 +315,24 @@ void* setpoint_control_loop(void* ptr){
 				mb_setpoints.gamma += mb_controls.max_turn_vel*turn_stick/RC_CTL_HZ;
 				mb_setpoints.gamma = mb_clamp_radians(mb_setpoints.gamma);
 			}
-		
+		}
+		//*******************************************************************for trajectory //hardcode
+		else if (cur_state == RUNNING)
+		{
+			//printf("num set points:**********************:%d ",num_set_pts);
+				if (counter < num_set_pts)
+				{
+					mb_setpoints.phi = sqrt(mb_traj[counter].x*mb_traj[counter].x+mb_traj[counter].y*mb_traj[counter].y)/(WHEEL_DIAMETER/2);
+					mb_setpoints.gamma = mb_traj[counter].psi;
+					printf("traj_x:%f %f\n", mb_traj[counter].x, mb_setpoints.phi);
+					counter++;
+				}
+				//TODO: the counter should be (tgt_counter < 1), need to solve the memory issue in the num_set_pts
+				if ((counter == num_set_pts) && (tgt_counter < 1)) {
+					counter = 0;
+					tgt_counter ++;
+					num_set_pts = traj_planner(tgt_pts[tgt_counter][0], tgt_pts[tgt_counter][1], tgt_pts[tgt_counter][2], mb_traj);
+				}
 		}
 
 	 	rc_nanosleep(1E9 / RC_CTL_HZ);//RC_CTL_HZ

@@ -185,3 +185,18 @@ float gamma_diff(float set_gamma, float gamma)
     }
     return (set_gamma-gamma);
 }
+
+int traj_planner(float x, float y, float psi, mb_odometry_t* traj) 
+{
+    float total_time = sqrt(x*x+y*y)/TRAJ_VEL;
+    int pt_num = total_time*RC_CTL_HZ;
+
+    traj = (mb_odometry_t*) realloc(traj,pt_num*sizeof(mb_odometry_t));
+
+    for (int i=0; i<pt_num; i++) {
+        traj[i].x = x/pt_num*i;
+        traj[i].y = y/pt_num*i;
+        traj[i].psi = psi/pt_num*i;
+    }
+    return pt_num;
+}

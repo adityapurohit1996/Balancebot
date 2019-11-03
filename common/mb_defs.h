@@ -67,4 +67,5 @@
 // #define MAX_TURN_VEL                0.7
 // #define MAX_FORWARD_VEL             1.0
 
+#define TRAJ_VEL                    0.2
 #endif
