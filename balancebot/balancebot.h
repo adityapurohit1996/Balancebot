@@ -35,6 +35,7 @@ mb_odometry_t* mb_traj;
 int tgt_counter ;
 int num_set_pts;
 int counter;
+float phi_last,gamma_last;
 
 xbee_packet_t xbeeMsg;
 int XBEE_portID;

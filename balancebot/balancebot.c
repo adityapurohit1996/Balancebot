@@ -82,6 +82,8 @@ int main(int argc, char *argv[]){
 	//*****************************************************************************for trajectory (delete if not required)
 	tgt_counter = 0;
 	counter = 0;
+	phi_last = 0;
+	gamma_last = 0;
 	mb_traj = NULL;
 	printf("Calling trajectory planner \n");
 	num_set_pts = traj_planner(tgt_pts[0][0], tgt_pts[0][1], tgt_pts[0][2], &mb_traj);
@@ -328,8 +330,8 @@ void* setpoint_control_loop(void* ptr){
 					printf("Entering count loop \n");
 					x = mb_traj[counter].x;
 					y = mb_traj[counter].y;
-					mb_setpoints.phi = sqrt(x*x+y*y)/(WHEEL_DIAMETER/2);
-					mb_setpoints.gamma = mb_traj[counter].psi;
+					mb_setpoints.phi = phi_last+sqrt(x*x+y*y)/(WHEEL_DIAMETER/2);
+					mb_setpoints.gamma = gamma_last+mb_traj[counter].psi;
 					printf("traj_x:%f %f %f %f\n",mb_setpoints.phi,mb_setpoints.gamma,x,y);
 					counter++;
 				}
@@ -338,6 +340,8 @@ void* setpoint_control_loop(void* ptr){
 					printf("***************************going into next stretch\n:%d",tgt_counter);
 					counter = 0;
 					tgt_counter ++;
+					phi_last += mb_setpoints.phi;
+					gamma_last += mb_setpoints.gamma;
 					num_set_pts = traj_planner(tgt_pts[tgt_counter][0], tgt_pts[tgt_counter][1], tgt_pts[tgt_counter][2], &mb_traj);
 				}
 		}
