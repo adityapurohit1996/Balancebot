@@ -33,8 +33,16 @@ mb_controls_t mb_controls;
 xbee_packet_t xbeeMsg;
 int XBEE_portID;
 
+//for trajectory
+double* square;
+double* line;
+int sq_size = 800;
+int line_size = 300;
+int counter;
+
 // functions
 void balancebot_controller();
+double* readMatrixFromFile(char* fileName, int height, int width);
 
 
 //threads

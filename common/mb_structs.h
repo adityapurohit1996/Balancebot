@@ -9,7 +9,7 @@ struct mb_state{
     float   theta;             // body angle (rad)
     float   gyro_yaw;
     float   phi;            //Average wheel angle (rad)
-    float   gamma;          // Orientation 
+    float   gamma;          // Orientation
     int     left_encoder;      // left encoder counts since last reading
     int     right_encoder;     // right encoder counts since last reading
 
@@ -65,6 +65,7 @@ struct mb_controls{
     float F3 ;
     float max_fwd_vel;
     float max_turn_vel;
+    float auto_task;
 
     float incre;
 

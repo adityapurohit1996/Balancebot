@@ -78,7 +78,7 @@ int mb_controller_load_config(mb_controls_t* mb_controls){
     {
     for (i=0;i<16;i++)
     {
-        fscanf(fp,"%f",&temp[i]);	
+        fscanf(fp,"%f",&temp[i]);
     }
     mb_controls->kp_1 = -temp[0];
     mb_controls->ki_1 = -temp[1];
@@ -96,6 +96,7 @@ int mb_controller_load_config(mb_controls_t* mb_controls){
     mb_controls->F3 = temp[13];
     mb_controls->max_fwd_vel = temp[14];
     mb_controls->max_turn_vel = temp[15];
+		mb_controls->auto_task = temp[16];
 
     fclose(fp);
 	}
@@ -118,8 +119,8 @@ int mb_controller_load_config(mb_controls_t* mb_controls){
 int mb_controller_update(mb_controls_t* mb_controls, mb_state_t* mb_state, mb_setpoints_t* mb_setpoints){
     /*TODO: Write your controller here*/
 
-    
- 
+
+
         //if(fabs(mb_state.phi_dot) > 0.001) setpoint.phi += setpoint.phi_dot*DT;
     mb_state->d2_u = rc_filter_march(&mb_controls->D2,mb_setpoints->phi - mb_state->phi);
     mb_setpoints->theta = mb_state->d2_u + mb_controls->gyro_offset;
@@ -171,14 +172,14 @@ float minimum (float a, float b)
     return a < b ? a : b;
 }
 
-float gamma_diff(float set_gamma, float gamma) 
+float gamma_diff(float set_gamma, float gamma)
 {
-    if ((set_gamma<0) && (gamma>0)) 
+    if ((set_gamma<0) && (gamma>0))
     {
         if (fabs(set_gamma+2*M_PI-gamma) < fabs(set_gamma-gamma))
             return (set_gamma+2*M_PI-gamma);
     }
-    if ((gamma<0) && (set_gamma>0)) 
+    if ((gamma<0) && (set_gamma>0))
     {
         if (fabs(set_gamma-gamma-2*M_PI) < fabs(set_gamma-gamma))
             return (set_gamma-gamma-2*M_PI);

@@ -76,6 +76,10 @@ int main(int argc, char *argv[]){
 		return -1;
 	};
 
+	//for trajectory - autonomous task
+	square = readMatrixFromFile("square.csv", sq_size, 3);
+	line = readMatrixFromFile("line.csv", line_size, 3);
+
     // make PID file to indicate your project is running
 	// due to the check made on the call to rc_kill_existing_process() above
 	// we can be fairly confident there is no PID file already and we can
@@ -326,6 +330,27 @@ void* setpoint_control_loop(void* ptr){
 
 		}
 
+		if (rc_get_state()== RUNNING) {
+			//square
+			if ((int)mb_controls.auto_task == 1) && (counter < sq_size) {
+				float x = square[counter*3];
+				float y = square[counter*3+1];
+				mb_setpoints.phi = sqrt(x*x+y*y)/(WHEEL_DIAMETER/2);
+				mb_setpoints.gamma = square[counter*3+2];
+				mb_setpoints.gamma = mb_clamp_radians(mb_setpoints.gamma);
+				counter++;
+			}
+			//straight line
+			if ((int)mb_controls.auto_task == 2) && (counter < line_size) {
+				float x = line[counter*3];
+				float y = line[counter*3+1];
+				mb_setpoints.phi = sqrt(x*x+y*y)/(WHEEL_DIAMETER/2);
+				mb_setpoints.gamma = line[counter*3+2];
+				mb_setpoints.gamma = mb_clamp_radians(mb_setpoints.gamma);
+				counter++;
+			}
+		}
+
 	 	rc_nanosleep(1E9 / RC_CTL_HZ);//RC_CTL_HZ
 	}
 	return NULL;
@@ -492,4 +517,27 @@ void* set_gains(void* ptr) {
 		rc_nanosleep(1E10/5);
 	}
 	return NULL;
+}
+
+double* readMatrixFromFile(char* fileName, int height, int width) {
+  FILE* fp = fopen(fileName, "r");
+  if (fp == NULL) {
+    fprintf(stderr, "Can't open %s.\n", fileName);
+    return NULL;
+  }
+  double val;
+  double* M = (double*) malloc(height * width * sizeof(double));
+  for(int i = 0; i < height; i++) {
+    for(int j = 0; j < width; j++) {
+      if (fscanf(fp, " %lf", &val) != 1) {
+        fprintf(stderr, "Couldn't read value.\n");
+        return NULL;
+      }
+      // Discard the comma without checking.
+      fgetc(fp);
+      M[i * width + j] = val;
+    }
+  }
+  fclose(fp);
+  return M;
 }
