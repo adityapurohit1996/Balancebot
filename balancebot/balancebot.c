@@ -28,7 +28,7 @@
 #define max(a,b) (((a)>(b)) ? (a):(b))
 #define min(a,b) (((a)<(b)) ? (a):(b))
 
-float tgt_pts[7][3] = {{1, 0, 0}, {0, 0, M_PI/2}, {0, 1, 0}, {0, 0, M_PI/2}, {-1, 0, 0}, {0, 0, M_PI/2}, {0, -1, 0}};
+float tgt_pts[7][3] = {{1, 0, 0}, {0, 0, 1.57}, {0, 1, 0}, {0, 0, M_PI/2}, {-1, 0, 0}, {0, 0, M_PI/2}, {0, -1, 0}};
 
 
 /*******************************************************************************
@@ -53,7 +53,7 @@ int main(int argc, char *argv[]){
         fprintf(stderr,"Failed to set governor to PERFORMANCE\n");
         return -1;
     }
-	
+
 	// initialize enocders
     if(rc_encoder_eqep_init()==-1){
         fprintf(stderr,"ERROR: failed to initialize eqep encoders\n");
@@ -175,7 +175,7 @@ int main(int argc, char *argv[]){
 	// FILE* fp;
 	// fp = fopen(CFG_PATH,"w");
 	// if (fp != NULL)
-	// { 
+	// {
 	// 	fprintf(fp,"%f %f %f %f %f %f\n",mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.F1,mb_controls.gyro_offset,mb_controls.left_motor_offset);
 	// 	fprintf(fp,"%f %f %f %f\n",mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.F2);
 	// 	fprintf(fp,"1.0 0.0 0.0 1\n");
@@ -186,7 +186,7 @@ int main(int argc, char *argv[]){
 	// exit cleanly
 	//free(mb_traj);
 	//endwin();
-	rc_mpu_power_off(); 
+	rc_mpu_power_off();
 	mb_motor_cleanup(&mb_controls);
 	rc_led_cleanup();
 	rc_encoder_eqep_cleanup();
@@ -238,7 +238,7 @@ void balancebot_controller(){
 		mb_motor_set(RIGHT_MOTOR,0);// minimum(mb_state.right_cmd,0.999));
 		mb_motor_set(LEFT_MOTOR, 0);//minimum(mb_state.left_cmd,0.999));
 	  }
-		
+
   }
 
   if(mb_setpoints.manual_ctl){
@@ -299,31 +299,30 @@ void* setpoint_control_loop(void* ptr){
 	while(1){
 		cur_state = rc_get_state();
 
-		if(rc_dsm_is_new_data()){
-				// TODO: Handle the DSM data from the Spektrum radio reciever
-				// You may should implement switching between manual and autonomous mode
-				// using channel 5 of the DSM data.
-			turn_stick  = rc_dsm_ch_normalized(DSM_TURN_CH) * DSM_TURN_POL;
-			drive_stick = rc_dsm_ch_normalized(DSM_DRIVE_CH)* DSM_DRIVE_POL;
-			input_mode = rc_dsm_ch_normalized(DSM_CHOOSE_MODE)* DSM_DRIVE_POL;
-
-			//printf("%f %f %f\n",turn_stick, drive_stick, input_mode);
-			if (input_mode) 
-				mb_setpoints.manual_ctl = 1;
-			else
-				mb_setpoints.manual_ctl = 0;
-
-			if (mb_setpoints.manual_ctl) {
-				mb_setpoints.phi += mb_controls.max_fwd_vel*drive_stick/RC_CTL_HZ/(WHEEL_DIAMETER/2);
-				mb_setpoints.gamma += mb_controls.max_turn_vel*turn_stick/RC_CTL_HZ;
-				mb_setpoints.gamma = mb_clamp_radians(mb_setpoints.gamma);
-			}
-		}
+		// if(rc_dsm_is_new_data()){
+		// 		// TODO: Handle the DSM data from the Spektrum radio reciever
+		// 		// You may should implement switching between manual and autonomous mode
+		// 		// using channel 5 of the DSM data.
+		// 	turn_stick  = rc_dsm_ch_normalized(DSM_TURN_CH) * DSM_TURN_POL;
+		// 	drive_stick = rc_dsm_ch_normalized(DSM_DRIVE_CH)* DSM_DRIVE_POL;
+		// 	input_mode = rc_dsm_ch_normalized(DSM_CHOOSE_MODE)* DSM_DRIVE_POL;
+		//
+		// 	//printf("%f %f %f\n",turn_stick, drive_stick, input_mode);
+		// 	if (input_mode)
+		// 		mb_setpoints.manual_ctl = 0;//should be 1
+		// 	else
+		// 		mb_setpoints.manual_ctl = 0;
+		//
+		// 	if (mb_setpoints.manual_ctl) {
+		// 		mb_setpoints.phi += mb_controls.max_fwd_vel*drive_stick/RC_CTL_HZ/(WHEEL_DIAMETER/2);
+		// 		mb_setpoints.gamma += mb_controls.max_turn_vel*turn_stick/RC_CTL_HZ;
+		// 		mb_setpoints.gamma = mb_clamp_radians(mb_setpoints.gamma);
+		// 	}
+		// }
 		//*******************************************************************for trajectory //hardcode
-		else if (cur_state == RUNNING)
+		if (cur_state == RUNNING)
 		{
 			float x,y;
-			printf("num set points:**********************:%d ",num_set_pts);
 				if (counter < num_set_pts)
 				{
 					printf("Entering count loop \n");
@@ -331,11 +330,12 @@ void* setpoint_control_loop(void* ptr){
 					y = mb_traj[counter].y;
 					mb_setpoints.phi = sqrt(x*x+y*y)/(WHEEL_DIAMETER/2);
 					mb_setpoints.gamma = mb_traj[counter].psi;
-					printf("traj_x:%f %f\n",x,y);
+					printf("traj_x:%f %f %f %f\n",mb_setpoints.phi,mb_setpoints.gamma,x,y);
 					counter++;
 				}
 				//TODO: the counter should be (tgt_counter < 1), need to solve the memory issue in the num_set_pts
-				if ((counter == num_set_pts) && (tgt_counter < 1)) {
+				if ((counter == num_set_pts) && (tgt_counter < 7)) {
+					printf("***************************going into next stretch\n:%d",tgt_counter);
 					counter = 0;
 					tgt_counter ++;
 					num_set_pts = traj_planner(tgt_pts[tgt_counter][0], tgt_pts[tgt_counter][1], tgt_pts[tgt_counter][2], &mb_traj);
@@ -343,7 +343,7 @@ void* setpoint_control_loop(void* ptr){
 		}
 
 	 	rc_nanosleep(1E9 / RC_CTL_HZ);//RC_CTL_HZ
-	} 
+	}
 	return NULL;
 }
 
@@ -380,13 +380,13 @@ void* printf_loop(void* ptr){
 
 		// 	printf("\n");
 		// }
-		
+
 		// else if(new_state==PAUSED && last_state!=PAUSED){
 		// 	printf("\nPAUSED\n");
 		// }
-		
+
 		last_state = new_state;
-		
+
 		if(new_state == RUNNING){
 		 	printf("\r");
 		// 	//Add Print stattements here, do not follow with /n
@@ -422,7 +422,7 @@ void* set_gains(void* ptr) {
 		//int ch = getch();
 		mb_controller_load_config(&mb_controls);
 		/*
-		if (ch == ERR) 
+		if (ch == ERR)
 			printf("no input\n");
 		else {
 			switch (ch) {

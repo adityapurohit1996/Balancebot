@@ -78,7 +78,7 @@ int mb_controller_load_config(mb_controls_t* mb_controls){
     {
     for (i=0;i<16;i++)
     {
-        fscanf(fp,"%f",&temp[i]);	
+        fscanf(fp,"%f",&temp[i]);
     }
     mb_controls->kp_1 = -temp[0];
     mb_controls->ki_1 = -temp[1];
@@ -118,8 +118,8 @@ int mb_controller_load_config(mb_controls_t* mb_controls){
 int mb_controller_update(mb_controls_t* mb_controls, mb_state_t* mb_state, mb_setpoints_t* mb_setpoints){
     /*TODO: Write your controller here*/
 
-    
- 
+
+
         //if(fabs(mb_state.phi_dot) > 0.001) setpoint.phi += setpoint.phi_dot*DT;
     mb_state->d2_u = rc_filter_march(&mb_controls->D2,mb_setpoints->phi - mb_state->phi);
     mb_setpoints->theta = mb_state->d2_u + mb_controls->gyro_offset;
@@ -171,14 +171,14 @@ float minimum (float a, float b)
     return a < b ? a : b;
 }
 
-float gamma_diff(float set_gamma, float gamma) 
+float gamma_diff(float set_gamma, float gamma)
 {
-    if ((set_gamma<0) && (gamma>0)) 
+    if ((set_gamma<0) && (gamma>0))
     {
         if (fabs(set_gamma+2*M_PI-gamma) < fabs(set_gamma-gamma))
             return (set_gamma+2*M_PI-gamma);
     }
-    if ((gamma<0) && (set_gamma>0)) 
+    if ((gamma<0) && (set_gamma>0))
     {
         if (fabs(set_gamma-gamma-2*M_PI) < fabs(set_gamma-gamma))
             return (set_gamma-gamma-2*M_PI);
@@ -186,13 +186,13 @@ float gamma_diff(float set_gamma, float gamma)
     return (set_gamma-gamma);
 }
 
-int traj_planner(float x, float y, float psi, mb_odometry_t** traj) 
+int traj_planner(float x, float y, float psi, mb_odometry_t** traj)
 {
     if(*traj != NULL)
 	{
 		free(*traj);
 	}
-    float total_time = sqrt(x*x+y*y)/TRAJ_VEL;
+    float total_time = (sqrt(x*x+y*y)+psi)/TRAJ_VEL;
     int pt_num = total_time*RC_CTL_HZ;
     printf("allocating \n");
     *traj = (mb_odometry_t*) malloc(pt_num*sizeof(mb_odometry_t));
@@ -204,5 +204,6 @@ int traj_planner(float x, float y, float psi, mb_odometry_t** traj)
         (*traj)[i].y = y/pt_num*i;
         (*traj)[i].psi = psi/pt_num*i;
     }
+		printf("traj pt 10 x:%f",(*traj)[10].x);
     return pt_num;
 }
