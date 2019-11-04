@@ -30,6 +30,7 @@
 
 float tgt_pts[7][3] = {{1, 0, 0}, {0, 0, M_PI/2}, {0, 1, 0}, {0, 0, M_PI/2}, {-1, 0, 0}, {0, 0, M_PI/2}, {0, -1, 0}};
 
+
 /*******************************************************************************
 * int main()
 *
@@ -81,8 +82,10 @@ int main(int argc, char *argv[]){
 	//*****************************************************************************for trajectory (delete if not required)
 	tgt_counter = 0;
 	counter = 0;
-	mb_traj = (mb_odometry_t*) malloc(50*sizeof(mb_odometry_t));
-	num_set_pts = traj_planner(tgt_pts[0][0], tgt_pts[0][1], tgt_pts[0][2], mb_traj);
+	mb_traj = NULL;
+	printf("Calling trajectory planner \n");
+	num_set_pts = traj_planner(tgt_pts[0][0], tgt_pts[0][1], tgt_pts[0][2], &mb_traj);
+	printf("%d \n",num_set_pts);
 
     // make PID file to indicate your project is running
 	// due to the check made on the call to rc_kill_existing_process() above
@@ -99,7 +102,7 @@ int main(int argc, char *argv[]){
 	// start control thread
 	printf("starting setpoint thread... \n");
 	pthread_t  setpoint_control_thread;
-	rc_pthread_create(&setpoint_control_thread, setpoint_control_loop, (void*) NULL, SCHED_FIFO, 50);
+	rc_pthread_create(&setpoint_control_thread, setpoint_control_loop, (void*) NULL, SCHED_OTHER, 0);
 
 	printf("starting gain thread... \n");
 	pthread_t  gain_thread;
@@ -227,13 +230,13 @@ void balancebot_controller(){
   if(!mb_setpoints.manual_ctl){
 	  if(mb_state.d1_u < 0)
 	  {
-		mb_motor_set(RIGHT_MOTOR, maximum(mb_state.right_cmd,-0.999));
-		mb_motor_set(LEFT_MOTOR, maximum(mb_state.left_cmd,-0.999));
+		mb_motor_set(RIGHT_MOTOR, 0);//maximum(mb_state.right_cmd,-0.999));
+		mb_motor_set(LEFT_MOTOR,0);// maximum(mb_state.left_cmd,-0.999));
 	  }
 	  else
 	  {
-		mb_motor_set(RIGHT_MOTOR, minimum(mb_state.right_cmd,0.999));
-		mb_motor_set(LEFT_MOTOR, minimum(mb_state.left_cmd,0.999));
+		mb_motor_set(RIGHT_MOTOR,0);// minimum(mb_state.right_cmd,0.999));
+		mb_motor_set(LEFT_MOTOR, 0);//minimum(mb_state.left_cmd,0.999));
 	  }
 		
   }
@@ -319,19 +322,23 @@ void* setpoint_control_loop(void* ptr){
 		//*******************************************************************for trajectory //hardcode
 		else if (cur_state == RUNNING)
 		{
-			//printf("num set points:**********************:%d ",num_set_pts);
+			float x,y;
+			printf("num set points:**********************:%d ",num_set_pts);
 				if (counter < num_set_pts)
 				{
-					mb_setpoints.phi = sqrt(mb_traj[counter].x*mb_traj[counter].x+mb_traj[counter].y*mb_traj[counter].y)/(WHEEL_DIAMETER/2);
+					printf("Entering count loop \n");
+					x = mb_traj[counter].x;
+					y = mb_traj[counter].y;
+					mb_setpoints.phi = sqrt(x*x+y*y)/(WHEEL_DIAMETER/2);
 					mb_setpoints.gamma = mb_traj[counter].psi;
-					printf("traj_x:%f %f\n", mb_traj[counter].x, mb_setpoints.phi);
+					printf("traj_x:%f %f\n",x,y);
 					counter++;
 				}
 				//TODO: the counter should be (tgt_counter < 1), need to solve the memory issue in the num_set_pts
 				if ((counter == num_set_pts) && (tgt_counter < 1)) {
 					counter = 0;
 					tgt_counter ++;
-					num_set_pts = traj_planner(tgt_pts[tgt_counter][0], tgt_pts[tgt_counter][1], tgt_pts[tgt_counter][2], mb_traj);
+					num_set_pts = traj_planner(tgt_pts[tgt_counter][0], tgt_pts[tgt_counter][1], tgt_pts[tgt_counter][2], &mb_traj);
 				}
 		}
 

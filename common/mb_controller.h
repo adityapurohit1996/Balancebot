@@ -13,6 +13,6 @@ int mb_controller_cleanup();
 float maximum(float a, float b);
 float minimum(float a, float b);
 float gamma_diff(float set_gamma, float gamma);
-int traj_planner(float x, float y, float psi, mb_odometry_t* traj);
+int traj_planner(float x, float y, float psi, mb_odometry_t** traj);
 #endif
 
