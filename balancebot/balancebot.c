@@ -50,7 +50,7 @@ int main(int argc, char *argv[]){
         fprintf(stderr,"Failed to set governor to PERFORMANCE\n");
         return -1;
     }
-	
+
 	// initialize enocders
     if(rc_encoder_eqep_init()==-1){
         fprintf(stderr,"ERROR: failed to initialize eqep encoders\n");
@@ -164,7 +164,7 @@ int main(int argc, char *argv[]){
 	// FILE* fp;
 	// fp = fopen(CFG_PATH,"w");
 	// if (fp != NULL)
-	// { 
+	// {
 	// 	fprintf(fp,"%f %f %f %f %f %f\n",mb_controls.kp_1, mb_controls.ki_1, mb_controls.kd_1, mb_controls.F1,mb_controls.gyro_offset,mb_controls.left_motor_offset);
 	// 	fprintf(fp,"%f %f %f %f\n",mb_controls.kp_2, mb_controls.ki_2, mb_controls.kd_2, mb_controls.F2);
 	// 	fprintf(fp,"1.0 0.0 0.0 1\n");
@@ -174,7 +174,7 @@ int main(int argc, char *argv[]){
 
 	// exit cleanly
 	endwin();
-	rc_mpu_power_off(); 
+	rc_mpu_power_off();
 	mb_motor_cleanup(&mb_controls);
 	rc_led_cleanup();
 	rc_encoder_eqep_cleanup();
@@ -226,7 +226,7 @@ void balancebot_controller(){
 		mb_motor_set(RIGHT_MOTOR, minimum(mb_state.right_cmd,0.999));
 		mb_motor_set(LEFT_MOTOR, minimum(mb_state.left_cmd,0.999));
 	  }
-		
+
   }
 
   if(mb_setpoints.manual_ctl){
@@ -270,7 +270,7 @@ void balancebot_controller(){
 *
 *******************************************************************************/
 void* setpoint_control_loop(void* ptr){
-	    double drive_stick, turn_stick, input_mode; // input sticks
+	    double drive_stick, turn_stick, input_mode, reset; // input sticks
         // int i, ch, chan, stdin_timeout = 0; // for stdin input
         // char in_str[11];
 
@@ -291,24 +291,43 @@ void* setpoint_control_loop(void* ptr){
 				// using channel 5 of the DSM data.
 			turn_stick  = rc_dsm_ch_normalized(DSM_TURN_CH) * DSM_TURN_POL;
 			drive_stick = rc_dsm_ch_normalized(DSM_DRIVE_CH)* DSM_DRIVE_POL;
-			input_mode = rc_dsm_ch_normalized(DSM_CHOOSE_MODE)* DSM_DRIVE_POL;
+			input_mode = rc_dsm_ch_normalized(DSM_CHOOSE_MODE);
+			reset = rc_dsm_ch_normalized(DSM_RESET_CH);
 
 			//printf("%f %f %f\n",turn_stick, drive_stick, input_mode);
-			if (input_mode) 
+			if (input_mode)
 				mb_setpoints.manual_ctl = 1;
 			else
 				mb_setpoints.manual_ctl = 0;
+
+			if (reset) {
+				rc_encoder_eqep_write(1, 0);
+				rc_encoder_eqep_write(2, 0);
+				mb_setpoints.phi = 0;
+				mb_setpoints.theta = 0;
+				mb_setpoints.gamma = 0;
+				mb_state.theta = 0;
+				mb_state.gyro_yaw = 0;
+				mb_state.phi = 0;
+				mb_state.gamma = 0;
+				mb_state.left_encoder = 0;
+				mb_state.right_encoder = 0;
+				mb_odometry.x = 0;
+				mb_odometry.y = 0;
+				mb_odometry.psi = 0;
+				mb_odometry.gyro_yaw_last = 0;
+			}
 
 			if (mb_setpoints.manual_ctl) {
 				mb_setpoints.phi += mb_controls.max_fwd_vel*drive_stick/RC_CTL_HZ/(WHEEL_DIAMETER/2);
 				mb_setpoints.gamma += mb_controls.max_turn_vel*turn_stick/RC_CTL_HZ;
 				mb_setpoints.gamma = mb_clamp_radians(mb_setpoints.gamma);
 			}
-		
+
 		}
 
 	 	rc_nanosleep(1E9 / RC_CTL_HZ);//RC_CTL_HZ
-	} 
+	}
 	return NULL;
 }
 
@@ -345,13 +364,13 @@ void* printf_loop(void* ptr){
 
 		// 	printf("\n");
 		// }
-		
+
 		// else if(new_state==PAUSED && last_state!=PAUSED){
 		// 	printf("\nPAUSED\n");
 		// }
-		
+
 		last_state = new_state;
-		
+
 		if(new_state == RUNNING){
 		 	printf("\r");
 		// 	//Add Print stattements here, do not follow with /n
@@ -387,7 +406,7 @@ void* set_gains(void* ptr) {
 		//int ch = getch();
 		mb_controller_load_config(&mb_controls);
 		/*
-		if (ch == ERR) 
+		if (ch == ERR)
 			printf("no input\n");
 		else {
 			switch (ch) {
