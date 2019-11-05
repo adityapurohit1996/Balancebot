@@ -28,7 +28,10 @@
 #define max(a,b) (((a)>(b)) ? (a):(b))
 #define min(a,b) (((a)<(b)) ? (a):(b))
 
-float tgt_pts[7][3] = {{1, 0, 0}, {0, 0, 1.57}, {0, 1, 0}, {0, 0, M_PI/2}, {-1, 0, 0}, {0, 0, M_PI/2}, {0, -1, 0}};
+float tgt_pts[32][3] = {{0.9, 0, 0}, {0, 0, 1.65}, {0, 0.85, 0}, {0, 0, 1.7}, {-0.8, 0, 0}, {0, 0, 1.57}, {0, -0.85, 0}, {0, 0, 1.75},
+												{0.9, 0, 0}, {0, 0, 1.65}, {0, 0.85, 0}, {0, 0, 1.7}, {-0.8, 0, 0}, {0, 0, 1.55}, {0, -0.85, 0}, {0, 0, 1.75},
+											  {0.9, 0, 0}, {0, 0, 1.65}, {0, 0.85, 0}, {0, 0, 1.7}, {-0.8, 0, 0}, {0, 0, 1.55}, {0, -0.85, 0}, {0, 0, 1.75},
+											  {0.9, 0, 0}, {0, 0, 1.65}, {0, 0.85, 0}, {0, 0, 1.7}, {-0.8, 0, 0}, {0, 0, 1.55}, {0, -0.85, 0}, {0, 0, 1.75}};
 
 
 /*******************************************************************************
@@ -232,13 +235,13 @@ void balancebot_controller(){
   if(!mb_setpoints.manual_ctl){
 	  if(mb_state.d1_u < 0)
 	  {
-		mb_motor_set(RIGHT_MOTOR, 0);//maximum(mb_state.right_cmd,-0.999));
-		mb_motor_set(LEFT_MOTOR,0);// maximum(mb_state.left_cmd,-0.999));
+		mb_motor_set(RIGHT_MOTOR, maximum(mb_state.right_cmd,-0.999));//maximum(mb_state.right_cmd,-0.999));
+		mb_motor_set(LEFT_MOTOR,maximum(mb_state.left_cmd,-0.999));// maximum(mb_state.left_cmd,-0.999));
 	  }
 	  else
 	  {
-		mb_motor_set(RIGHT_MOTOR,0);// minimum(mb_state.right_cmd,0.999));
-		mb_motor_set(LEFT_MOTOR, 0);//minimum(mb_state.left_cmd,0.999));
+		mb_motor_set(RIGHT_MOTOR,minimum(mb_state.right_cmd,0.999));// minimum(mb_state.right_cmd,0.999));
+		mb_motor_set(LEFT_MOTOR, minimum(mb_state.left_cmd,0.999));//minimum(mb_state.left_cmd,0.999));
 	  }
 
   }
@@ -325,23 +328,25 @@ void* setpoint_control_loop(void* ptr){
 		if (cur_state == RUNNING)
 		{
 			float x,y;
-				if (counter < num_set_pts)
+				if ((counter < num_set_pts)&& (tgt_counter < 32))
 				{
-					printf("Entering count loop \n");
 					x = mb_traj[counter].x;
 					y = mb_traj[counter].y;
 					mb_setpoints.phi = phi_last+sqrt(x*x+y*y)/(WHEEL_DIAMETER/2);
 					mb_setpoints.gamma = gamma_last+mb_traj[counter].psi;
-					printf("traj_x:%f %f %f %f\n",mb_setpoints.phi,mb_setpoints.gamma,x,y);
+					mb_setpoints.gamma = mb_clamp_radians(mb_setpoints.gamma);
+					//printf("traj_x:%f %f %f %f\n",mb_setpoints.phi,mb_setpoints.gamma,x,y);
 					counter++;
 				}
 				//TODO: the counter should be (tgt_counter < 1), need to solve the memory issue in the num_set_pts
-				if ((counter == num_set_pts) && (tgt_counter < 7)) {
+				if ((counter == num_set_pts) && (tgt_counter < 32)) {
 					printf("***************************going into next stretch\n:%d",tgt_counter);
+					rc_nanosleep(1E9);
 					counter = 0;
 					tgt_counter ++;
-					phi_last += mb_setpoints.phi;
-					gamma_last += mb_setpoints.gamma;
+					phi_last = mb_setpoints.phi;
+					gamma_last = mb_setpoints.gamma;
+					mb_setpoints.gamma = mb_clamp_radians(mb_setpoints.gamma);
 					num_set_pts = traj_planner(tgt_pts[tgt_counter][0], tgt_pts[tgt_counter][1], tgt_pts[tgt_counter][2], &mb_traj);
 				}
 		}

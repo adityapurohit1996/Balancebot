@@ -189,13 +189,19 @@ float gamma_diff(float set_gamma, float gamma)
 int traj_planner(float x, float y, float psi, mb_odometry_t** traj)
 {
     if(*traj != NULL)
-	{
+	  {
 		free(*traj);
-	}
-    float total_time = (sqrt(x*x+y*y)+psi)/TRAJ_VEL;
+	  }
+		float traj_vel;
+		if (sqrt(x*x+y*y)>0)
+			traj_vel = TRAJ_VEL; //for x-y movement
+		else
+			traj_vel = 1.2; //for turning
+    float total_time = (sqrt(x*x+y*y)+psi)/traj_vel;
     int pt_num = total_time*RC_CTL_HZ;
+		printf("num_points:%d",pt_num);
     printf("allocating \n");
-    *traj = (mb_odometry_t*) malloc(pt_num*sizeof(mb_odometry_t));
+    *traj = (mb_odometry_t*) malloc((pt_num)*sizeof(mb_odometry_t));
     printf("allocated \n");
     //traj = (mb_odometry_t*) realloc(traj,pt_num*sizeof(mb_odometry_t));
 
@@ -205,5 +211,5 @@ int traj_planner(float x, float y, float psi, mb_odometry_t** traj)
         (*traj)[i].psi = psi/pt_num*i;
     }
 		printf("traj pt 10 x:%f",(*traj)[10].x);
-    return pt_num;
+    return (pt_num);
 }
