@@ -197,7 +197,7 @@ int traj_planner(float x, float y, float psi, mb_odometry_t** traj)
 			traj_vel = TRAJ_VEL; //for x-y movement
 		else
 			traj_vel = 1.2; //for turning
-    float total_time = (sqrt(x*x+y*y)+psi)/traj_vel;
+    float total_time = (sqrt(x*x+y*y)+fabs(psi))/traj_vel;
     int pt_num = total_time*RC_CTL_HZ;
 		printf("num_points:%d",pt_num);
 		printf("total_time:%f,vel:%f,psi:%f",total_time,traj_vel,psi);

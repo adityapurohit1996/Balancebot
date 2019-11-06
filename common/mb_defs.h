@@ -62,10 +62,10 @@
 #define DSM_TURN_POL		        1
 #define DSM_DRIVE_CH		        3
 #define DSM_TURN_CH		            4
-#define DSM_CHOOSE_MODE             5		            
+#define DSM_CHOOSE_MODE             5
 #define DSM_DEAD_ZONE		        0.04
 // #define MAX_TURN_VEL                0.7
 // #define MAX_FORWARD_VEL             1.0
 
-#define TRAJ_VEL                    0.2
+#define TRAJ_VEL                    0.1
 #endif
