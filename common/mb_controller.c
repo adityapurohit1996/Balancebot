@@ -68,7 +68,7 @@ int mb_controller_init(mb_controls_t* mb_controls, mb_setpoints_t* mb_setpoints)
 
 
 int mb_controller_load_config(mb_controls_t* mb_controls){
-    float temp[16];
+    float temp[19];
     int i;
     FILE* fp = fopen(CFG_PATH, "r");
     if (fp == NULL){
@@ -76,7 +76,7 @@ int mb_controller_load_config(mb_controls_t* mb_controls){
     }
     else
     {
-    for (i=0;i<16;i++)
+    for (i=0;i<19;i++)
     {
         fscanf(fp,"%f",&temp[i]);
     }
@@ -96,6 +96,9 @@ int mb_controller_load_config(mb_controls_t* mb_controls){
     mb_controls->F3 = temp[13];
     mb_controls->max_fwd_vel = temp[14];
     mb_controls->max_turn_vel = temp[15];
+		mb_controls->acc1_line = temp[16];
+    mb_controls->acc2_line = temp[17];
+		mb_controls->max_vel_line = temp[18];
 
     fclose(fp);
 	}
@@ -212,4 +215,50 @@ int traj_planner(float x, float y, float psi, mb_odometry_t** traj)
     }
 		printf("traj pt 10 x:%f",(*traj)[10].x);
     return (pt_num);
+}
+
+int traj_planner_line(float x, float vel, float acc_1, float acc_2, mb_odometry_t** traj) {
+	float time_acc1 = vel/acc_1;
+	float time_acc2 = vel/acc_2;
+	float dist_acc = 0.5*acc_1*(time_acc1*time_acc1) + 0.5*acc_2*(time_acc2*time_acc2);
+
+	float time_const_vel = (x-dist_acc)/vel;
+	int pt_num1 = time_acc1*RC_CTL_HZ;
+	int pt_num2 = time_const_vel*RC_CTL_HZ;
+	int pt_num3 = time_acc2*RC_CTL_HZ;
+	printf("t_acc1:%f,t_acc_2:%f,pt_n1:%d,pt_n2:%d,pt_n3:%d\n",time_acc1,time_acc2,pt_num1, pt_num2,pt_num3);
+
+	printf("allocating \n");
+	*traj = (mb_odometry_t*) malloc((pt_num1+pt_num2+pt_num3)*sizeof(mb_odometry_t));
+	printf("allocated \n");
+
+	float cur_vel = 0;
+	(*traj)[0].x = 0;
+	(*traj)[0].y = 0;
+	(*traj)[0].psi = 0;
+	int i;
+	for (i=1; i<pt_num1 + pt_num2 + pt_num3; i++)
+	{
+		if(i < pt_num1)
+		{
+			cur_vel += acc_1/25;
+		}
+		else if((i >= pt_num1) && (i<pt_num1+pt_num2))
+		{
+			cur_vel = vel;
+		}
+		else if((i >= pt_num1+pt_num2) && (i<pt_num1+pt_num2+pt_num3))
+		{
+			cur_vel -= acc_2/25;
+		}
+		else
+		{
+			cur_vel = 0;
+		}
+			(*traj)[i].x = (*traj)[i-1].x + cur_vel/25;
+			(*traj)[i].y = 0;
+			(*traj)[i].psi = 0;
+	}
+
+	return (pt_num1+pt_num2+pt_num3);
 }

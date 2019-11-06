@@ -82,16 +82,6 @@ int main(int argc, char *argv[]){
 		return -1;
 	};
 
-	//*****************************************************************************for trajectory (delete if not required)
-	tgt_counter = 0;
-	counter = 0;
-	phi_last = 0;
-	gamma_last = 0;
-	mb_traj = NULL;
-	printf("Calling trajectory planner \n");
-	num_set_pts = traj_planner(tgt_pts[0][0], tgt_pts[0][1], tgt_pts[0][2], &mb_traj);
-	printf("%d \n",num_set_pts);
-
     // make PID file to indicate your project is running
 	// due to the check made on the call to rc_kill_existing_process() above
 	// we can be fairly confident there is no PID file already and we can
@@ -144,6 +134,20 @@ int main(int argc, char *argv[]){
 	printf("initializing motors...\n");
 	mb_motor_init();
 
+	//*****************************************************************************for trajectory (delete if not required)
+	// tgt_counter = 0;
+	// counter = 0;
+	// phi_last = 0;
+	// gamma_last = 0;
+	// mb_traj = NULL;
+	// printf("Calling trajectory planner \n");
+	// num_set_pts = traj_planner(tgt_pts[0][0], tgt_pts[0][1], tgt_pts[0][2], &mb_traj);
+	// printf("%d \n",num_set_pts);
+	counter = 0;
+	printf("mx_vel_line:%f,acc_l:%f,acc_l2:%f\n",mb_controls.max_vel_line, mb_controls.acc1_line, mb_controls.acc2_line);
+	num_set_pts = traj_planner_line(11.8, mb_controls.max_vel_line, mb_controls.acc1_line, mb_controls.acc2_line, &line_set_pts);
+	printf("set point 11 x:%f",line_set_pts[10].x);
+	printf("number of set points:%d", num_set_pts);
 	printf("resetting encoders...\n");
 	rc_encoder_eqep_write(1, 0);
 	rc_encoder_eqep_write(2, 0);
@@ -304,51 +308,26 @@ void* setpoint_control_loop(void* ptr){
 	while(1){
 		cur_state = rc_get_state();
 
-		// if(rc_dsm_is_new_data()){
-		// 		// TODO: Handle the DSM data from the Spektrum radio reciever
-		// 		// You may should implement switching between manual and autonomous mode
-		// 		// using channel 5 of the DSM data.
-		// 	turn_stick  = rc_dsm_ch_normalized(DSM_TURN_CH) * DSM_TURN_POL;
-		// 	drive_stick = rc_dsm_ch_normalized(DSM_DRIVE_CH)* DSM_DRIVE_POL;
-		// 	input_mode = rc_dsm_ch_normalized(DSM_CHOOSE_MODE)* DSM_DRIVE_POL;
-		//
-		// 	//printf("%f %f %f\n",turn_stick, drive_stick, input_mode);
-		// 	if (input_mode)
-		// 		mb_setpoints.manual_ctl = 0;//should be 1
-		// 	else
-		// 		mb_setpoints.manual_ctl = 0;
-		//
-		// 	if (mb_setpoints.manual_ctl) {
-		// 		mb_setpoints.phi += mb_controls.max_fwd_vel*drive_stick/RC_CTL_HZ/(WHEEL_DIAMETER/2);
-		// 		mb_setpoints.gamma += mb_controls.max_turn_vel*turn_stick/RC_CTL_HZ;
-		// 		mb_setpoints.gamma = mb_clamp_radians(mb_setpoints.gamma);
-		// 	}
-		// }
-		//*******************************************************************for trajectory //hardcode
-		if (cur_state == RUNNING)
-		{
-			float x,y;
-				if ((counter < num_set_pts)&& (tgt_counter < 32))
+		if(rc_dsm_is_new_data()){
+			input_mode = rc_dsm_ch_normalized(DSM_CHOOSE_MODE)* DSM_DRIVE_POL;
+
+			//printf("%f %f %f\n",turn_stick, drive_stick, input_mode);
+			if (input_mode) {
+				if (cur_state == RUNNING)
 				{
-					x = mb_traj[counter].x;
-					y = mb_traj[counter].y;
-					mb_setpoints.phi = phi_last+sqrt(x*x+y*y)/(WHEEL_DIAMETER/2);
-					mb_setpoints.gamma = gamma_last+mb_traj[counter].psi;
-					mb_setpoints.gamma = mb_clamp_radians(mb_setpoints.gamma);
-					//printf("traj_x:%f %f %f %f\n",mb_setpoints.phi,mb_setpoints.gamma,x,y);
-					counter++;
+					float x,y;
+						if (counter < num_set_pts)
+						{
+							printf("counter loops\n");
+							x = line_set_pts[counter].x;
+							y = line_set_pts[counter].y;
+							mb_setpoints.phi = sqrt(x*x+y*y)/(WHEEL_DIAMETER/2);
+							mb_setpoints.gamma = line_set_pts[counter].psi;
+							mb_setpoints.gamma = mb_clamp_radians(mb_setpoints.gamma);
+							counter++;
+						}
 				}
-				//TODO: the counter should be (tgt_counter < 1), need to solve the memory issue in the num_set_pts
-				if ((counter == num_set_pts) && (tgt_counter < 32)) {
-					printf("***************************going into next stretch\n:%d",tgt_counter);
-					rc_nanosleep(1E9);
-					counter = 0;
-					tgt_counter ++;
-					phi_last = mb_setpoints.phi;
-					gamma_last = mb_setpoints.gamma;
-					mb_setpoints.gamma = mb_clamp_radians(mb_setpoints.gamma);
-					num_set_pts = traj_planner(tgt_pts[tgt_counter][0], tgt_pts[tgt_counter][1], tgt_pts[tgt_counter][2], &mb_traj);
-				}
+			}
 		}
 
 	 	rc_nanosleep(1E9 / RC_CTL_HZ);//RC_CTL_HZ

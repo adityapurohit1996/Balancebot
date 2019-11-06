@@ -14,5 +14,5 @@ float maximum(float a, float b);
 float minimum(float a, float b);
 float gamma_diff(float set_gamma, float gamma);
 int traj_planner(float x, float y, float psi, mb_odometry_t** traj);
+int traj_planner_line(float x, float vel, float acc_1, float acc_2, mb_odometry_t** traj);
 #endif
-
