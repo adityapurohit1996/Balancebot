@@ -200,6 +200,7 @@ int traj_planner(float x, float y, float psi, mb_odometry_t** traj)
     float total_time = (sqrt(x*x+y*y)+psi)/traj_vel;
     int pt_num = total_time*RC_CTL_HZ;
 		printf("num_points:%d",pt_num);
+		printf("total_time:%f,vel:%f,psi:%f",total_time,traj_vel,psi);
     printf("allocating \n");
     *traj = (mb_odometry_t*) malloc((pt_num)*sizeof(mb_odometry_t));
     printf("allocated \n");
