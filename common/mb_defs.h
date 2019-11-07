@@ -54,7 +54,7 @@
 #define D2_DEN			{1.00000,  0, 0}
 #define D2_NUM_LEN		3
 #define D2_DEN_LEN		3
-#define THETA_REF_MAX		0.33
+#define THETA_REF_MAX	0.33
 
 // DSM channel config
 #define SETPOINT_MANAGER_HZ	        100

@@ -76,6 +76,8 @@ int main(int argc, char *argv[]){
 		return -1;
 	};
 
+
+	t_pre = rc_nanos_since_epoch();
     // make PID file to indicate your project is running
 	// due to the check made on the call to rc_kill_existing_process() above
 	// we can be fairly confident there is no PID file already and we can
@@ -284,6 +286,13 @@ void* setpoint_control_loop(void* ptr){
 		// }
 
 	while(1){
+		rc_state_t last_state, new_state; // keep track of last state
+		new_state = rc_get_state();
+		last_state = new_state;
+		
+		if(new_state == RUNNING){
+			mb_setpoints.theta = 1.0;
+		}
 
 		if(rc_dsm_is_new_data()){
 				// TODO: Handle the DSM data from the Spektrum radio reciever
@@ -343,8 +352,8 @@ void* setpoint_control_loop(void* ptr){
 * TODO: Add other data to help you tune/debug your code
 *******************************************************************************/
 void* printf_loop(void* ptr){
-	rc_state_t last_state, new_state; // keep track of last state
-	while(rc_get_state()!=EXITING){
+		rc_state_t last_state, new_state; // keep track of last state
+		while(rc_get_state()!=EXITING){float
 		new_state = rc_get_state();
 		// check if this is the first time since being paused
 		// if(new_state==RUNNING){
@@ -364,24 +373,33 @@ void* printf_loop(void* ptr){
 
 		// 	printf("\n");
 		// }
-
+		
 		// else if(new_state==PAUSED && last_state!=PAUSED){
 		// 	printf("\nPAUSED\n");
 		// }
-
+		
 		last_state = new_state;
-
+		
 		if(new_state == RUNNING){
 		 	printf("\r");
 		// 	//Add Print stattements here, do not follow with /n
 			pthread_mutex_lock(&state_mutex);
-		 	printf("theta = %7.3f  |", mb_state.theta);
-		 	printf("phi = %7.3f  |", mb_state.phi);
-			 printf("gamma = %7.3f  |", mb_state.gamma);
-			printf("setpoint_phi = %7.3f  |", mb_setpoints.phi);
-			printf("setpoint_gamma = %7.3f  |", mb_setpoints.gamma);
-			printf("left cmd = %7.3f  |", mb_state.left_cmd);
-			printf("right cmd = %7.3f  |", mb_state.right_cmd);
+		 	// printf("theta = %7.3f  |", mb_state.theta);
+		 	// printf("phi = %7.3f  |", mb_state.phi);
+			//  printf("gamma = %7.3f  |", mb_state.gamma);
+			// printf("setpoint_phi = %7.3f  |", mb_setpoints.phi);
+			// printf("setpoint_gamma = %7.3f  |", mb_setpoints.gamma);
+			// printf("left cmd = %7.3f  |", mb_state.left_cmd);
+			// printf("right cmd = %7.3f  |", mb_state.right_cmd);
+
+			//print to files
+			uint64_t t_cur = rc_nanos_since_epoch();
+    		float t_diff = (float)((t_cur-t_pre)/1E9);   
+    		FILE* f1;
+    		f1 = fopen("/home/debian/stepresponse_theta0p1.csv", "a");
+    		fprintf(f1, "%7.3f, %7.3f, %7.3f, %7.3f \n",t_diff, mb_state.theta, mb_state.phi, mb_odometry.psi);
+    		printf("%7.3f, %7.3f, %7.3f, %7.3f\n",t_diff, mb_state.theta, mb_state.phi, mb_odometry.psi);
+    		fclose(f1);
 		// 	// printf("%7.3f  |", mb_state.theta_dot);
 		// 	// printf("%7.3f  |", mb_state.phi_dot);
 		// 	//printf("%7d  |", mb_state.left_encoder);
@@ -395,7 +413,8 @@ void* printf_loop(void* ptr){
 			pthread_mutex_unlock(&state_mutex);
 			fflush(stdout);
 		}
-		 rc_nanosleep(4E9/PRINTF_HZ);
+		 rc_nanosleep(1E9/PRINTF_HZ);
+
 	}
 	return NULL;
 }
