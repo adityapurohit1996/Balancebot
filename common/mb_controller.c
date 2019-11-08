@@ -46,11 +46,11 @@ int mb_controller_init(mb_controls_t* mb_controls, mb_setpoints_t* mb_setpoints)
     rc_filter_enable_saturation(&mb_controls->Di, -0.7, 0.7);
     rc_filter_enable_soft_start(&mb_controls->Di, SOFT_START_SEC);
 
-    rc_filter_enable_saturation(&mb_controls->D2, -THETA_REF_MAX, THETA_REF_MAX);
-    rc_filter_enable_soft_start(&mb_controls->D2, SOFT_START_SEC);
+    // rc_filter_enable_saturation(&mb_controls->D2, -THETA_REF_MAX, THETA_REF_MAX);
+    // rc_filter_enable_soft_start(&mb_controls->D2, SOFT_START_SEC);
 
-    rc_filter_enable_saturation(&mb_controls->D3, -THETA_REF_MAX, THETA_REF_MAX);
-    rc_filter_enable_soft_start(&mb_controls->D3, SOFT_START_SEC);
+    // rc_filter_enable_saturation(&mb_controls->D3, -THETA_REF_MAX, THETA_REF_MAX);
+    // rc_filter_enable_soft_start(&mb_controls->D3, SOFT_START_SEC);
     mb_controls->incre = 0.01;
 
     return 0;
@@ -121,8 +121,8 @@ int mb_controller_update(mb_controls_t* mb_controls, mb_state_t* mb_state, mb_se
     
  
         //if(fabs(mb_state.phi_dot) > 0.001) setpoint.phi += setpoint.phi_dot*DT;
-    mb_state->d2_u = rc_filter_march(&mb_controls->D2,mb_setpoints->phi - mb_state->phi);
-    mb_setpoints->theta = mb_state->d2_u + mb_controls->gyro_offset;
+    // mb_state->d2_u = rc_filter_march(&mb_controls->D2,mb_setpoints->phi - mb_state->phi);
+    // mb_setpoints->theta = mb_state->d2_u + mb_controls->gyro_offset;
 
     static float theta_error;
     theta_error =  mb_setpoints->theta-mb_state->theta;
@@ -133,12 +133,15 @@ int mb_controller_update(mb_controls_t* mb_controls, mb_state_t* mb_state, mb_se
     }
 
      mb_state->u = mb_state->d1_u;
+     mb_state->left_cmd = mb_state->u;
+     mb_state->right_cmd = mb_state->u;
+
 
     //consider the roundoffs when calculateing the gamma difference
-    float gamma_d = gamma_diff(mb_setpoints->gamma, mb_state->gamma);
-    mb_state->d3_u = rc_filter_march(&mb_controls->D3,gamma_d);
-    mb_state->left_cmd = mb_state->u - mb_state->d3_u;
-    mb_state->right_cmd = mb_state->u + mb_state->d3_u;
+    // float gamma_d = gamma_diff(mb_setpoints->gamma, mb_state->gamma);
+    // mb_state->d3_u = rc_filter_march(&mb_controls->D3,gamma_d);
+    // mb_state->left_cmd = mb_state->u - mb_state->d3_u;
+    // mb_state->right_cmd = mb_state->u + mb_state->d3_u;
 
     return 0;
 }

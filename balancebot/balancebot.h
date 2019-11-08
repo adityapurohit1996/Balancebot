@@ -30,6 +30,8 @@ mb_setpoints_t mb_setpoints;
 mb_odometry_t mb_odometry;
 mb_controls_t mb_controls;
 
+int counter;
+
 uint64_t t_pre;
 
 xbee_packet_t xbeeMsg;

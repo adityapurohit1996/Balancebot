@@ -76,6 +76,8 @@ int main(int argc, char *argv[]){
 		return -1;
 	};
 
+	counter = 0;
+
 
 	t_pre = rc_nanos_since_epoch();
     // make PID file to indicate your project is running
@@ -117,7 +119,7 @@ int main(int argc, char *argv[]){
 		return -1;
 	}
 
-	rc_nanosleep(5E9); // wait for imu to stabilize
+	//rc_nanosleep(1E9); // wait for imu to stabilize
 
 	//initialize state mutex
     pthread_mutex_init(&state_mutex, NULL);
@@ -291,7 +293,15 @@ void* setpoint_control_loop(void* ptr){
 		last_state = new_state;
 		
 		if(new_state == RUNNING){
-			mb_setpoints.theta = 1.0;
+			if (counter <300)
+				counter++;
+			else if ((counter>=300)&&(counter<325)) {
+			    mb_setpoints.theta = 0.2;
+				counter++;
+			}
+			else {
+				mb_setpoints.theta = 0.018;
+			}
 		}
 
 		if(rc_dsm_is_new_data()){
@@ -396,9 +406,9 @@ void* printf_loop(void* ptr){
 			uint64_t t_cur = rc_nanos_since_epoch();
     		float t_diff = (float)((t_cur-t_pre)/1E9);   
     		FILE* f1;
-    		f1 = fopen("/home/debian/stepresponse_theta0p1.csv", "a");
-    		fprintf(f1, "%7.3f, %7.3f, %7.3f, %7.3f \n",t_diff, mb_state.theta, mb_state.phi, mb_odometry.psi);
-    		printf("%7.3f, %7.3f, %7.3f, %7.3f\n",t_diff, mb_state.theta, mb_state.phi, mb_odometry.psi);
+    		f1 = fopen("/home/debian/step_theta.csv", "a");
+    		fprintf(f1, "%7.3f, %7.3f, %7.3f, %7.3f, %7.3f, %7.3f, %7.3f \n",t_diff, mb_state.theta, mb_state.phi, mb_odometry.psi,mb_setpoints.theta,mb_setpoints.phi,mb_setpoints.gamma);
+    		printf("%7.3f, %7.3f, %7.3f, %7.3f, %7.3f, %7.3f, %7.3f\n",t_diff, mb_state.theta, mb_state.phi, mb_odometry.psi,mb_setpoints.theta,mb_setpoints.phi,mb_setpoints.gamma);
     		fclose(f1);
 		// 	// printf("%7.3f  |", mb_state.theta_dot);
 		// 	// printf("%7.3f  |", mb_state.phi_dot);
