@@ -1,8 +1,3 @@
-/*******************************************************************************
-*                           Balancebot Template Code
-*                           pgaskell@umich.edu
-*       
-*******************************************************************************/
 
 bin/			             : Binaries folder
 balanceebot/balanceebot.c/.h : Main setup and threads
